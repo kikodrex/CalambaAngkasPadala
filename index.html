@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calamba Angkas Padala</title>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+<style>
+  /* Reset & base */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  html, body, #app {
+    height: 100%;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #facc15, #dc2626); /* Yellow to Red gradient */
+    color: #1e293b;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #dc2626, #fbbf24); /* Red to Yellow gradient */
+    color: white;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgb(220 38 38 / 0.4);
+  }
+
+  header .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  header .logo i.material-icons {
+    font-size: 2rem;
+  }
+
+  /* Main container */
+  #app {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 24px;
+  }
+
+  /* Responsive layout */
+  main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  @media(min-width: 768px) {
+    main {
+      flex-direction: row;
+      padding: 24px 48px;
+    }
+  }
+
+  /* Map container */
+  #map {
+    flex-grow: 1;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    min-height: 320px;
+    touch-action: none; /* Prevent unwanted scrolling on mobile when interacting with map */
+  }
+
+  /* Booking panel */
+  #booking-panel {
+    background: rgba(255 255 255 / 0.95);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 400px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  #booking-panel h2 {
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #dc2626; /* red */
+    margin-bottom: 8px;
+  }
+
+  label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #334155;
+  }
+
+  input {
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid #cbd5e1;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    width: 100%;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: #fbbf24; /* yellow */
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+  }
+
+  /* Container for pickup input and "Use Location" button */
+  .pickup-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  button {
+    background: #fbbf24; /* yellow */
+    color: #dc2626; /* red */
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 15px rgba(251,191,36,0.6);
+    transition: background 0.3s ease, color 0.3s ease;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 1rem;
+    user-select: none;
+  }
+
+  button:hover:not(:disabled) {
+    background: #dc2626; /* red */
+    color: white;
+  }
+
+  button:disabled {
+    background: #fcd34d; /* lighter yellow */
+    cursor: not-allowed;
+    box-shadow: none;
+    color: #a16207; /* dark yellow/brown */
+  }
+
+  #book-btn, #send-code-btn, #verify-code-btn {
+    width: 100%;
+  }
+
+  #use-location-btn {
+    min-width: 44px;
+    padding: 0 12px;
+    background: #dc2626;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+  }
+
+  #use-location-btn:disabled, #send-code-btn:disabled, #verify-code-btn:disabled {
+    background: #f87171;
+    cursor: not-allowed;
+  }
+
+  #use-location-btn i.material-icons,
+  #send-code-btn i.material-icons,
+  #verify-code-btn i.material-icons {
+    font-size: 24px;
+  }
+
+  #status {
+    font-size: 1rem;
+    color: #334155;
+    font-weight: 600;
+    min-height: 24px;
+    min-width: 100%;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  /* Small text for instructions */
+  .small-text {
+    font-size: 0.85rem;
+    color: #6b7280;
+  }
+
+  /* Leaflet default styling override */
+  .leaflet-container {
+    background: #fef3c7; /* soft yellow background behind map */
+  }
+
+  /* Autocomplete specific styles */
+  .autocomplete-items {
+    position: absolute;
+    border: 1px solid #cbd5e1; /* Using a neutral border color */
+    z-index: 9999;
+    max-height: 180px;
+    overflow-y: auto;
+    border-radius: 8px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+    background-color: #fff; /* Ensure it has a background */
+    left: 0; /* Align with input */
+    right: 0; /* Align with input */
+    margin-top: 4px; /* Small gap below input */
+  }
+
+  .autocomplete-items div {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.95rem; /* Slightly smaller for suggestions */
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9; /* Light separator */
+  }
+
+  .autocomplete-items div:last-child {
+    border-bottom: none; /* No separator for the last item */
+  }
+
+  .autocomplete-items div:hover,
+  .autocomplete-items .autocomplete-active { /* Use a class for active state */
+    background-color: #dc2626; /* red highlight */
+    color: #fff;
+  }
+
+  /* Modal specific styles */
+  #booking-confirmation-modal {
+    font-family: 'Inter', sans-serif; /* Ensure modal uses the same font */
+  }
+  #booking-confirmation-modal > div {
+    animation: fadeInScale 0.3s ease-out;
+  }
+
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Add a darker hover for cancel button */
+  #modal-cancel-btn:hover {
+    background: #b91c1c !important; /* Darker red */
+  }
+
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 12px 24px;
+    font-size: 0.9rem;
+    color: #b91c1c; /* dark red */
+  }
+</style>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+  integrity="sha256-sA+9twHpae04gjnyh/9FbriBhd3zox5dD+4ypCsXPsM="
+  crossorigin=""
+/>
+</head>
+<body>
+<header>
+  <div class="logo"><i class="material-icons" aria-hidden="true">motorcycle</i> Calamba Angkas Padala</div>
+</header>
+<div id="app">
+  <main>
+    <section id="map" aria-label="Map showing available drivers and routes" tabindex="0"></section>
+    <section id="booking-panel" aria-label="Booking panel">
+      <h2>Verify &amp; Book a Ride</h2>
+
+      <form id="verification-form" aria-describedby="status" novalidate autocomplete="off">
+        <label for="mobile">Mobile Number</label>
+        <input type="tel" id="mobile" name="mobile" placeholder="Enter mobile number" autocomplete="tel" aria-required="true" required pattern="^\+?\d{10,15}$" aria-label="Mobile number" inputmode="tel" />
+        <button type="button" id="send-code-btn" disabled aria-label="Send verification code">Send Code</button>
+        <small class="small-text">Include country code if outside PH (e.g. +639...)</small>
+
+        <label for="verification-code" style="margin-top:16px;">Verification Code</label>
+        <input type="text" id="verification-code" name="verification-code" placeholder="Enter code" autocomplete="one-time-code" aria-required="true" disabled aria-label="Verification code" inputmode="numeric" />
+        <button type="button" id="verify-code-btn" disabled aria-label="Verify code">Verify</button>
+      </form>
+
+      <form id="booking-form" aria-describedby="status" style="display:none;" novalidate autocomplete="off">
+        <label for="pickup">Pick-up Location</label>
+        <div class="pickup-container">
+          <input type="text" id="pickup" name="pickup" placeholder="Enter pick-up address" autocomplete="off" aria-label="Pick-up location" />
+          <button type="button" id="use-location-btn" aria-label="Use Current Location" title="Use Current Location"><i class="material-icons" aria-hidden="true">my_location</i></button>
+        </div>
+        <label for="destination">Destination</label>
+        <input type="text" id="destination" name="destination" placeholder="Enter destination address" autocomplete="off" aria-label="Destination location" />
+        <button type="submit" id="book-btn" disabled>Book Now</button>
+      </form>
+
+      <div id="status" aria-live="polite" role="region" aria-atomic="true"></div>
+    </section>
+  </main>
+</div>
+
+<div id="booking-confirmation-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100000; display:flex; justify-content:center; align-items:center;">
+  <div style="background:white; padding:30px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.3); max-width:450px; width:90%; text-align:center; position:relative;">
+    <h3 style="color:#dc2626; margin-bottom:20px; font-size:1.6rem;">Confirm Your Ride</h3>
+    <p style="margin-bottom:10px; font-weight:600; color:#334155;">From: <span id="modal-pickup-address" style="font-weight:normal;"></span></p>
+    <p style="margin-bottom:20px; font-weight:600; color:#334155;">To: <span id="modal-destination-address" style="font-weight:normal;"></span></p>
+    <p style="font-size:1.8rem; font-weight:700; color:#fbbf24; margin-bottom:30px;">Estimated Fare: <span id="modal-fare">₱0.00</span></p>
+    <div style="display:flex; justify-content:space-around; gap:15px;">
+      <button id="modal-confirm-btn" style="flex:1; background:#dc2626; color:white; padding:12px 20px;">Confirm & Book</button>
+      <button id="modal-cancel-btn" style="flex:1; background:#ef4444; color:white; padding:12px 20px;">Cancel</button>
+    </div>
+    <button id="modal-close-btn" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:1.5rem; color:#6b7280; cursor:pointer;" aria-label="Close modal">&times;</button>
+  </div>
+</div>
+
+<footer>© 2024 Calamba Angkas Padala - Demo Only</footer>
+
+<script
+  src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+  integrity="sha256-oUvHa+gqfPtTHwSCDL0m2Cik/mQ9N6jX1tGEMx4x4uc="
+  crossorigin=""
+></script>
+<script>
+  (function(){
+    "use strict";
+
+    // Pricing configuration (example values for Calamba)
+    const BASE_FARE = 50; // PHP
+    const PER_KM_RATE = 15; // PHP per kilometer
+    const PER_MINUTE_RATE = 2; // PHP per minute of travel time
+    const MINIMUM_FARE = 80; // PHP
+
+    // Initialize the map
+    const map = L.map("map", {
+      center: [14.2185, 121.1685], // Calamba, Laguna, PH
+      zoom: 13,
+      zoomControl: true,
+    });
+
+    // Add OpenStreetMap tiles
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors',
+    }).addTo(map);
+
+    // DOM elements
+    const mobileInput = document.getElementById("mobile");
+    const sendCodeBtn = document.getElementById("send-code-btn");
+    const verificationCodeInput = document.getElementById("verification-code");
+    const verifyCodeBtn = document.getElementById("verify-code-btn");
+
+    const pickupInput = document.getElementById("pickup");
+    const destinationInput = document.getElementById("destination");
+    const bookBtn = document.getElementById("book-btn");
+    const bookingForm = document.getElementById("booking-form");
+    const verificationForm = document.getElementById("verification-form");
+    const useLocationBtn = document.getElementById("use-location-btn");
+    const statusEl = document.getElementById("status");
+
+    // Modal elements
+    const modal = document.getElementById("booking-confirmation-modal");
+    const modalPickupAddress = document.getElementById("modal-pickup-address");
+    const modalDestinationAddress = document.getElementById("modal-destination-address");
+    const modalFare = document.getElementById("modal-fare");
+    const modalConfirmBtn = document.getElementById("modal-confirm-btn");
+    const modalCancelBtn = document.getElementById("modal-cancel-btn");
+    const modalCloseBtn = document.getElementById("modal-close-btn");
+
+
+    // Variables for markers and routes
+    let pickupLatLng = null;
+    let destinationLatLng = null;
+    let routeLayer = null;
+    let markers = []; // Stores all dynamically added markers (pickup, destination)
+
+    // Marker for customer current location (persistent if 'Use Current Location' is active)
+    let currentLocationMarker = null;
+
+    // Simulated driver markers
+    const simulatedDrivers = [];
+    const driverIcon = L.icon({
+      iconUrl: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png",
+      iconSize: [36, 36],
+      iconAnchor: [18, 36],
+      popupAnchor: [0, -36],
+      className: "driver-marker"
+    });
+
+    // Verification state
+    let isVerified = false;
+    let correctVerificationCode = null;
+
+    // Global variable to store estimated fare
+    let estimatedFareGlobal = 0;
+
+
+    // Validation regex for mobile numbers (Basic international format)
+    const mobileNumberRegex = /^\+?\d{10,15}$/;
+
+    // Enable or disable Send Code button based on mobile format
+    mobileInput.addEventListener("input", () => {
+      const valid = mobileNumberRegex.test(mobileInput.value.trim());
+      sendCodeBtn.disabled = !valid;
+    });
+
+    // Simulated send verification code
+    sendCodeBtn.addEventListener("click", () => {
+      const mobileNumber = mobileInput.value.trim();
+      if (!mobileNumberRegex.test(mobileNumber)) {
+        updateStatus("Please enter a valid mobile number.");
+        return;
+      }
+      // Generate 6-digit code
+      correctVerificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      updateStatus(`Verification code sent to ${mobileNumber}. (For demo: code is ${correctVerificationCode})`);
+      verificationCodeInput.disabled = false;
+      verifyCodeBtn.disabled = false;
+      sendCodeBtn.disabled = true;
+      mobileInput.disabled = true;
+      verificationCodeInput.focus();
+    });
+
+    // Verify code logic
+    verifyCodeBtn.addEventListener("click", () => {
+      const enteredCode = verificationCodeInput.value.trim();
+      if (enteredCode === correctVerificationCode) {
+        updateStatus("Mobile number verified successfully!");
+        isVerified = true;
+        verificationCodeInput.disabled = true;
+        verifyCodeBtn.disabled = true;
+        sendCodeBtn.disabled = true;
+        mobileInput.disabled = true;
+        // Show booking form and hide verification form
+        verificationForm.style.display = "none";
+        bookingForm.style.display = "flex";
+        initBookingFeatures();
+      } else {
+        updateStatus("Incorrect verification code. Please try again.");
+      }
+    });
+
+    // Initialize booking features after verification
+    function initBookingFeatures() {
+      setAutocomplete(pickupInput);
+      setAutocomplete(destinationInput);
+
+      useLocationBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          updateStatus("Geolocation is not supported by your browser.");
+          return;
+        }
+        useLocationBtn.disabled = true;
+        updateStatus("Locating...");
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            pickupLatLng = [latitude, longitude];
+            pickupInput.value = "Current Location"; // Set input value to "Current Location"
+            updateBookingButton();
+
+            // Create or update current location marker directly
+            if (currentLocationMarker) {
+              currentLocationMarker.setLatLng(pickupLatLng);
+            } else {
+              currentLocationMarker = L.marker(pickupLatLng, {
+                icon: L.icon({
+                  iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+                  iconSize: [32, 32],
+                  iconAnchor: [16, 32],
+                  popupAnchor: [0, -32],
+                  className: "current-location-marker",
+                }),
+                opacity: 0.7
+              }).addTo(map);
+              currentLocationMarker.bindPopup("Your Current Location").openPopup();
+            }
+            map.setView(pickupLatLng, 15); // Center map on detected location
+            updateMapMarkersAndRoute(); // Redraw drivers and potentially route
+            updateStatus("Location detected. You can now choose your destination.");
+            useLocationBtn.disabled = false;
+          },
+          () => {
+            updateStatus("Unable to retrieve your location. Please enter manually.");
+            useLocationBtn.disabled = false;
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          }
+        );
+      });
+
+      // Modify the booking form submit handler to show modal
+      bookingForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        if (!pickupLatLng || !destinationLatLng) {
+          updateStatus("Please select both pick-up and destination.");
+          return;
+        }
+        // Populate modal and show it instead of directly booking
+        modalPickupAddress.textContent = pickupInput.value;
+        modalDestinationAddress.textContent = destinationInput.value;
+        modalFare.textContent = estimatedFareGlobal ? `₱${estimatedFareGlobal.toFixed(2)}` : "Calculating...";
+        modal.style.display = "flex"; // Show the modal
+        bookBtn.disabled = true; // Disable main book button while modal is open
+      });
+    }
+
+    // Autocomplete setup
+    function debounce(func, wait) {
+      let timeout;
+      return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+
+    function geocode(query, callback) {
+      if (!query) {
+        callback([]);
+        return;
+      }
+      fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          query
+        )}&addressdetails=1&limit=5&bounded=1&viewbox=120.9,14.1,121.3,14.3` // Bounding box for Calamba area
+      )
+        .then((res) => res.json())
+        .then((data) => callback(data))
+        .catch(() => callback([]));
+    }
+
+    function setAutocomplete(inputElem) {
+      let container = null;
+      let currentFocus = -1;
+
+      function closeSuggestions() {
+        if (container) {
+          container.remove();
+          container = null;
+        }
+        currentFocus = -1;
+      }
+
+      function onSelect(item) {
+        inputElem.value = item.display_name;
+        if (inputElem.id === "pickup") {
+          pickupLatLng = [parseFloat(item.lat), parseFloat(item.lon)];
+          // If user manually types, clear currentLocationMarker if it was set
+          if (currentLocationMarker) {
+            map.removeLayer(currentLocationMarker);
+            currentLocationMarker = null;
+          }
+        } else if (inputElem.id === "destination") {
+          destinationLatLng = [parseFloat(item.lat), parseFloat(item.lon)];
+        }
+        closeSuggestions();
+        updateBookingButton();
+        updateMapMarkersAndRoute();
+      }
+
+      function onInput() {
+        const val = inputElem.value.trim();
+        closeSuggestions(); // Close previous suggestions
+        if (!val) {
+          return;
+        }
+        geocode(val, (results) => {
+          if (results.length === 0) return;
+
+          container = document.createElement("div");
+          container.setAttribute("class", "autocomplete-items"); // Use the CSS class
+          inputElem.parentNode.appendChild(container); // Append to parent of input
+
+          results.forEach((item) => {
+            let div = document.createElement("div");
+            div.textContent = item.display_name;
+            div.addEventListener("click", () => onSelect(item));
+            container.appendChild(div);
+          });
+        });
+      }
+
+      function onKeyDown(e) {
+        const items = container ? container.children : [];
+        if (!items.length) return; // Only proceed if there are items
+
+        if (e.key === "ArrowDown") {
+          currentFocus++;
+          if (currentFocus >= items.length) currentFocus = 0;
+          setActive(items);
+          e.preventDefault(); // Prevent cursor movement in input
+        } else if (e.key === "ArrowUp") {
+          currentFocus--;
+          if (currentFocus < 0) currentFocus = items.length - 1;
+          setActive(items);
+          e.preventDefault(); // Prevent cursor movement in input
+        } else if (e.key === "Enter") {
+          e.preventDefault();
+          if (currentFocus > -1) {
+            items[currentFocus].click();
+          }
+        }
+      }
+
+      function setActive(items) {
+        for (let i = 0; i < items.length; i++) {
+          items[i].classList.remove("autocomplete-active"); // Use classList
+        }
+        if (currentFocus > -1) {
+          items[currentFocus].classList.add("autocomplete-active"); // Use classList
+          // Scroll into view if needed
+          items[currentFocus].scrollIntoView({ block: "nearest" });
+        }
+      }
+
+      inputElem.addEventListener("input", debounce(onInput, 300));
+      inputElem.addEventListener("keydown", onKeyDown);
+      document.addEventListener("click", (e) => {
+        // Check if click is outside input and its autocomplete container
+        if (e.target !== inputElem && (!container || !container.contains(e.target))) {
+          closeSuggestions();
+        }
+      });
+    }
+
+    function updateBookingButton() {
+      bookBtn.disabled = !(pickupLatLng && destinationLatLng);
+    }
+
+    function clearMap() {
+      markers.forEach((m) => map.removeLayer(m));
+      markers = [];
+      if (routeLayer) {
+        map.removeLayer(routeLayer);
+        routeLayer = null;
+      }
+      // Do NOT remove currentLocationMarker here if it's meant to persist independently
+      // It's managed in useLocationBtn click and input change events.
+    }
+
+    function updateMapMarkersAndRoute() {
+      clearMap(); // Clears all general markers and route
+
+      // Add pickup marker ONLY if it's not the "Current Location" marker
+      if (pickupLatLng && pickupInput.value !== "Current Location") {
+        const pickupMarker = L.marker(pickupLatLng, {
+          icon: L.icon({
+            iconUrl:
+              "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+            iconSize: [36, 36],
+            iconAnchor: [18, 36],
+            popupAnchor: [0, -36],
+            className: "pickup-marker",
+          }),
+        }).addTo(map);
+        pickupMarker.bindPopup("Pick-up").openPopup();
+        markers.push(pickupMarker);
+      } else if (pickupLatLng && pickupInput.value === "Current Location" && currentLocationMarker) {
+        // If "Current Location" is active, ensure its popup is open
+        currentLocationMarker.bindPopup("Your Current Location").openPopup();
+      }
+
+      if (destinationLatLng) {
+        const destMarker = L.marker(destinationLatLng, {
+          icon: L.icon({
+            iconUrl:
+              "https://cdn-icons-png.flaticon.com/512/854/854878.png",
+            iconSize: [36, 36],
+            iconAnchor: [18, 36],
+            popupAnchor: [0, -36],
+            className: "destination-marker",
+          }),
+        }).addTo(map);
+        destMarker.bindPopup("Destination").openPopup();
+        markers.push(destMarker);
+      }
+
+      // Recreate simulated drivers near pickup if available, else near map center
+      simulatedDrivers.forEach((d) => map.removeLayer(d.marker));
+      simulatedDrivers.length = 0;
+      createSimulatedDrivers(pickupLatLng || map.getCenter(), 6, 3000);
+
+
+      if (pickupLatLng && destinationLatLng) {
+        fetchRoute(pickupLatLng, destinationLatLng);
+      } else if (pickupLatLng) {
+        map.setView(pickupLatLng, 14);
+      } else if (destinationLatLng) {
+        map.setView(destinationLatLng, 14);
+      }
+    }
+
+    function fetchRoute(start, end) {
+      const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+      updateStatus("Calculating route and fare..."); // Add a loading status
+      fetch(url)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.routes && data.routes.length > 0) {
+            const route = data.routes[0];
+            const coords = route.geometry.coordinates.map((c) => [c[1], c[0]]);
+            routeLayer && map.removeLayer(routeLayer);
+            routeLayer = L.polyline(coords, {
+              color: "#dc2626",
+              weight: 5,
+              opacity: 0.8,
+            }).addTo(map);
+            map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+
+            const distanceKm = route.distance / 1000; // meters to km
+            const durationMinutes = route.duration / 60; // seconds to minutes
+
+            let estimatedFare = BASE_FARE + (distanceKm * PER_KM_RATE) + (durationMinutes * PER_MINUTE_RATE);
+            estimatedFare = Math.max(estimatedFare, MINIMUM_FARE); // Ensure minimum fare
+            estimatedFare = Math.round(estimatedFare / 5) * 5; // Round to nearest 5 for typical pricing
+
+            estimatedFareGlobal = estimatedFare; // Store it globally for the modal
+
+            updateStatus(
+              `Route estimated: ${distanceKm.toFixed(2)} km, approx. ${durationMinutes.toFixed(0)} mins. ` +
+              `Estimated Fare: ₱${estimatedFare.toFixed(2)}`
+            );
+          } else {
+            updateStatus("Unable to find route.");
+          }
+        })
+        .catch(() => {
+          updateStatus("Route service is unavailable.");
+        });
+    }
+
+    // Distance calculation between latlng pairs (meters)
+    function distanceMeters(latlng1, latlng2) {
+      const R = 6371e3;
+      const φ1 = latlng1[0] * Math.PI / 180;
+      const φ2 = latlng2[0] * Math.PI / 180;
+      const Δφ = (latlng2[0] - latlng1[0]) * Math.PI / 180;
+      const Δλ = (latlng2[1] - latlng1[1]) * Math.PI / 180;
+
+      const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) *
+        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+      return R * c;
+    }
+
+    // Simulated drivers functions
+    function createSimulatedDrivers(center, count = 6, radius = 3000) {
+      // Clear existing drivers before creating new ones
+      simulatedDrivers.forEach(d => map.removeLayer(d.marker));
+      simulatedDrivers.length = 0; // Reset array
+      for (let i = 0; i < count; i++) {
+        const randomPoint = randomPointInRadius(center, radius);
+        const marker = L.marker(randomPoint, { icon: driverIcon }).addTo(map);
+        marker.bindPopup("Available driver");
+        simulatedDrivers.push({ latlng: randomPoint, marker });
+      }
+    }
+
+    function randomPointInRadius(center, radius) {
+      const y0 = center[0];
+      const x0 = center[1];
+      const rd = radius / 111300; // roughly 111.3 km per degree lat
+
+      const u = Math.random();
+      const v = Math.random();
+
+      const w = rd * Math.sqrt(u);
+      const t = 2 * Math.PI * v;
+      const x = w * Math.cos(t);
+      const y = w * Math.sin(t);
+
+      const newX = x / Math.cos(y0 * (Math.PI / 180)); // Adjust longitude for latitude
+
+      const foundLat = y0 + y * (180 / Math.PI);
+      const foundLng = x0 + newX * (180 / Math.PI);
+
+      return [foundLat, foundLng];
+    }
+
+    function updateSimulatedDrivers() {
+      simulatedDrivers.forEach(driver => {
+        // Move drivers slightly
+        const newPoint = randomPointInRadius(driver.latlng, 50); // Move within 50m radius
+        driver.latlng = newPoint;
+        driver.marker.setLatLng(newPoint);
+      });
+    }
+
+    // Update status UI (consolidated function)
+    function updateStatus(message) {
+      statusEl.textContent = message;
+    }
+
+    // Start drivers animation
+    setInterval(updateSimulatedDrivers, 4000);
+
+
+    // Event listeners for the modal buttons
+    modalConfirmBtn.addEventListener("click", () => {
+      updateStatus("Booking your ride...");
+      modal.style.display = "none";
+      modalConfirmBtn.disabled = true; // Disable to prevent double click
+
+      // Simulated booking delay
+      setTimeout(() => {
+        updateStatus("Ride booked successfully! Driver is on the way.");
+        modalConfirmBtn.disabled = false;
+        bookBtn.disabled = false; // Re-enable main book button after booking
+      }, 3000);
+    });
+
+    modalCancelBtn.addEventListener("click", () => {
+      modal.style.display = "none";
+      updateStatus("Booking cancelled.");
+      bookBtn.disabled = false; // Re-enable main book button
+    });
+
+    modalCloseBtn.addEventListener("click", () => {
+      modal.style.display = "none";
+      updateStatus("Booking flow interrupted.");
+      bookBtn.disabled = false; // Re-enable main book button
+    });
+
+  })();
+</script>
+</body>
+</html>
