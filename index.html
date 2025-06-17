@@ -241,6 +241,10 @@
   /* Modal specific styles */
   #booking-confirmation-modal {
     font-family: 'Inter', sans-serif; /* Ensure modal uses the same font */
+    display: none; /* MODAL IS HIDDEN BY DEFAULT */
+  }
+  #booking-confirmation-modal.is-visible {
+      display: flex; /* THIS CLASS WILL BE TOGGLED BY JS */
   }
   #booking-confirmation-modal > div {
     animation: fadeInScale 0.3s ease-out;
@@ -315,7 +319,7 @@
   </main>
 </div>
 
-<div id="booking-confirmation-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100000; display:flex; justify-content:center; align-items:center;">
+<div id="booking-confirmation-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100000; display:none; justify-content:center; align-items:center;">
   <div style="background:white; padding:30px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.3); max-width:450px; width:90%; text-align:center; position:relative;">
     <h3 style="color:#dc2626; margin-bottom:20px; font-size:1.6rem;">Confirm Your Ride</h3>
     <p style="margin-bottom:10px; font-weight:600; color:#334155;">From: <span id="modal-pickup-address" style="font-weight:normal;"></span></p>
@@ -340,23 +344,20 @@
   (function(){
     "use strict";
 
-    // --- (MODIFIED) PRICING ALGORITHM FOR PH ---
-    // This pricing model is more aligned with typical ride-hailing services in the Philippines.
+    // --- PRICING ALGORITHM FOR PH ---
     const BASE_FARE = 60.00; // Base fare in PHP, covers the first 2 kilometers.
     const SUCCEEDING_KM_RATE = 10.00; // Rate per km AFTER the first 2 km.
     const PER_MINUTE_RATE = 2.00; // Rate per minute of travel time to account for traffic.
     const MINIMUM_FARE = 60.00; // The minimum possible fare is the base fare.
     const INITIAL_KM_COVERED = 2.0; // The distance (in km) covered by the base fare.
 
-    // --- (MODIFIED) MAP INITIALIZATION ---
-    // Centered to show the Philippines archipelago.
+    // --- MAP INITIALIZATION ---
     const map = L.map("map", {
       center: [12.8797, 121.7740], // Geographical center of the Philippines
       zoom: 6, // Zoom level to fit the country
       zoomControl: true,
     });
 
-    // Add OpenStreetMap tiles (a reliable, free global map provider)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: '© OpenStreetMap contributors',
@@ -386,42 +387,28 @@
     const modalCloseBtn = document.getElementById("modal-close-btn");
 
 
-    // Variables for markers and routes
+    // Variables
     let pickupLatLng = null;
     let destinationLatLng = null;
     let routeLayer = null;
-    let markers = []; // Stores all dynamically added markers (pickup, destination)
-
-    // Marker for customer current location
+    let markers = [];
     let currentLocationMarker = null;
-
-    // Simulated driver markers
     const simulatedDrivers = [];
     const driverIcon = L.icon({
       iconUrl: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png",
       iconSize: [36, 36],
       iconAnchor: [18, 36],
       popupAnchor: [0, -36],
-      className: "driver-marker"
     });
-
-    // Verification state
     let isVerified = false;
     let correctVerificationCode = null;
-
-    // Global variable to store estimated fare
     let estimatedFareGlobal = 0;
-
-
-    // Validation regex for mobile numbers
     const mobileNumberRegex = /^\+?\d{10,15}$/;
 
-    // Enable or disable Send Code button
     mobileInput.addEventListener("input", () => {
       sendCodeBtn.disabled = !mobileNumberRegex.test(mobileInput.value.trim());
     });
 
-    // Simulated send verification code
     sendCodeBtn.addEventListener("click", () => {
       const mobileNumber = mobileInput.value.trim();
       if (!mobileNumberRegex.test(mobileNumber)) {
@@ -437,7 +424,6 @@
       verificationCodeInput.focus();
     });
 
-    // Verify code logic
     verifyCodeBtn.addEventListener("click", () => {
       const enteredCode = verificationCodeInput.value.trim();
       if (enteredCode === correctVerificationCode) {
@@ -451,7 +437,6 @@
       }
     });
 
-    // Initialize booking features after verification
     function initBookingFeatures() {
       setAutocomplete(pickupInput);
       setAutocomplete(destinationInput);
@@ -478,8 +463,6 @@
                   iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
                   iconSize: [32, 32],
                   iconAnchor: [16, 32],
-                  popupAnchor: [0, -32],
-                  className: "current-location-marker",
                 }),
                 opacity: 0.7
               }).addTo(map);
@@ -507,12 +490,11 @@
         modalPickupAddress.textContent = pickupInput.value;
         modalDestinationAddress.textContent = destinationInput.value;
         modalFare.textContent = estimatedFareGlobal ? `₱${estimatedFareGlobal.toFixed(2)}` : "Calculating...";
-        modal.style.display = "flex";
+        modal.style.display = "flex"; // Show the modal
         bookBtn.disabled = true;
       });
     }
 
-    // Autocomplete setup
     function debounce(func, wait) {
       let timeout;
       return function (...args) {
@@ -521,14 +503,11 @@
       };
     }
 
-    // --- (MODIFIED) GEOCODE FUNCTION ---
-    // Bounding box is now set for the entire Philippines.
     function geocode(query, callback) {
       if (!query) {
         callback([]);
         return;
       }
-      // Bounding box for the Philippines: lon_min=116.0, lat_min=4.0, lon_max=127.0, lat_max=21.0
       const viewbox = "116.0,21.0,127.0,4.0";
       fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
@@ -664,7 +643,7 @@
 
       simulatedDrivers.forEach((d) => map.removeLayer(d.marker));
       simulatedDrivers.length = 0;
-      createSimulatedDrivers(pickupLatLng || map.getCenter(), 10, 50000); // Larger radius for national view
+      createSimulatedDrivers(pickupLatLng || map.getCenter(), 10, 50000);
 
       if (pickupLatLng && destinationLatLng) {
         fetchRoute(pickupLatLng, destinationLatLng);
@@ -684,22 +663,21 @@
           if (data.routes && data.routes.length > 0) {
             const route = data.routes[0];
             const coords = route.geometry.coordinates.map((c) => [c[1], c[0]]);
-            routeLayer && map.removeLayer(routeLayer);
+            if(routeLayer) map.removeLayer(routeLayer);
             routeLayer = L.polyline(coords, { color: "#dc2626", weight: 5, opacity: 0.8 }).addTo(map);
             map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
 
             const distanceKm = route.distance / 1000;
             const durationMinutes = route.duration / 60;
 
-            // --- (MODIFIED) FARE CALCULATION LOGIC ---
             let distanceFare = 0;
             if (distanceKm > INITIAL_KM_COVERED) {
                 distanceFare = (distanceKm - INITIAL_KM_COVERED) * SUCCEEDING_KM_RATE;
             }
             const timeFare = durationMinutes * PER_MINUTE_RATE;
             let estimatedFare = BASE_FARE + distanceFare + timeFare;
-            estimatedFare = Math.max(estimatedFare, MINIMUM_FARE); // Ensure minimum fare
-            estimatedFare = Math.round(estimatedFare / 5) * 5; // Round to nearest 5 for convenience
+            estimatedFare = Math.max(estimatedFare, MINIMUM_FARE);
+            estimatedFare = Math.round(estimatedFare / 5) * 5;
 
             estimatedFareGlobal = estimatedFare;
 
@@ -716,7 +694,6 @@
         });
     }
     
-    // Simulated drivers functions
     function createSimulatedDrivers(center, count, radius) {
       simulatedDrivers.forEach(d => map.removeLayer(d.marker));
       simulatedDrivers.length = 0;
@@ -738,13 +715,13 @@
       const t = 2 * Math.PI * v;
       const x = w * Math.cos(t);
       const y = w * Math.sin(t);
-      const newX = x / Math.cos(y0 * (Math.PI / 180));
+      const newX = x / Math.cos(y0 * Math.PI / 180);
       return [y0 + y, x0 + newX];
     }
 
     function updateSimulatedDrivers() {
       simulatedDrivers.forEach(driver => {
-        const newPoint = randomPointInRadius(driver.latlng, 500); // Move within 500m
+        const newPoint = randomPointInRadius(driver.latlng, 500);
         driver.latlng = newPoint;
         driver.marker.setLatLng(newPoint);
       });
@@ -756,7 +733,6 @@
 
     setInterval(updateSimulatedDrivers, 4000);
 
-    // Event listeners for the modal buttons
     modalConfirmBtn.addEventListener("click", () => {
       updateStatus("Booking your ride...");
       modal.style.display = "none";
