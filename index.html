@@ -424,13 +424,21 @@
       verificationCodeInput.focus();
     });
 
+    // --- THIS IS THE CORRECTED VERIFICATION LOGIC ---
     verifyCodeBtn.addEventListener("click", () => {
       const enteredCode = verificationCodeInput.value.trim();
       if (enteredCode === correctVerificationCode) {
         updateStatus("Mobile number verified successfully!");
         isVerified = true;
+        
+        // Hide verification form and show booking form
         verificationForm.style.display = "none";
         bookingForm.style.display = "flex";
+        
+        // Disable verification fields permanently after success
+        verificationCodeInput.disabled = true;
+        verifyCodeBtn.disabled = true;
+        
         initBookingFeatures();
       } else {
         updateStatus("Incorrect verification code. Please try again.");
