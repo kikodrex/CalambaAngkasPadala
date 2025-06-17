@@ -82,7 +82,7 @@
     overflow: hidden;
     box-shadow: 0 8px 24px rgba(0,0,0,0.15);
     min-height: 320px;
-    touch-action: none; /* Prevent unwanted scrolling on mobile when interacting with map */
+    touch-action: none;
   }
 
   /* Booking panel */
@@ -103,10 +103,16 @@
     color: #dc2626; /* red */
     margin-bottom: 8px;
   }
+  
+  #booking-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
 
   label {
     font-weight: 600;
-    margin-bottom: 6px;
+    margin-bottom: -12px; /* Adjust spacing */
     color: #334155;
   }
 
@@ -125,7 +131,6 @@
     box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
   }
 
-  /* Container for pickup input and "Use Location" button */
   .pickup-container {
     display: flex;
     gap: 8px;
@@ -158,7 +163,7 @@
     color: #a16207; /* dark yellow/brown */
   }
 
-  #book-btn, #send-code-btn, #verify-code-btn {
+  #book-btn {
     width: 100%;
   }
 
@@ -172,15 +177,13 @@
     justify-content: center;
     border-radius: 12px;
   }
-
-  #use-location-btn:disabled, #send-code-btn:disabled, #verify-code-btn:disabled {
+  
+  #use-location-btn:disabled {
     background: #f87171;
     cursor: not-allowed;
   }
 
-  #use-location-btn i.material-icons,
-  #send-code-btn i.material-icons,
-  #verify-code-btn i.material-icons {
+  #use-location-btn i.material-icons {
     font-size: 24px;
   }
 
@@ -194,85 +197,60 @@
     white-space: pre-wrap;
   }
 
-  /* Small text for instructions */
-  .small-text {
-    font-size: 0.85rem;
-    color: #6b7280;
-  }
-
-  /* Leaflet default styling override */
   .leaflet-container {
-    background: #fef3c7; /* soft yellow background behind map */
+    background: #fef3c7;
   }
 
-  /* Autocomplete specific styles */
   .autocomplete-items {
     position: absolute;
-    border: 1px solid #cbd5e1; /* Using a neutral border color */
+    border: 1px solid #cbd5e1;
     z-index: 9999;
     max-height: 180px;
     overflow-y: auto;
     border-radius: 8px;
     box-shadow: 0 3px 12px rgba(0,0,0,0.15);
-    background-color: #fff; /* Ensure it has a background */
-    left: 0; /* Align with input */
-    right: 0; /* Align with input */
-    margin-top: 4px; /* Small gap below input */
+    background-color: #fff;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
   }
 
   .autocomplete-items div {
     padding: 8px 12px;
     cursor: pointer;
-    font-size: 0.95rem; /* Slightly smaller for suggestions */
+    font-size: 0.95rem;
     color: #334155;
-    border-bottom: 1px solid #f1f5f9; /* Light separator */
+    border-bottom: 1px solid #f1f5f9;
   }
 
   .autocomplete-items div:last-child {
-    border-bottom: none; /* No separator for the last item */
+    border-bottom: none;
   }
 
   .autocomplete-items div:hover,
-  .autocomplete-items .autocomplete-active { /* Use a class for active state */
-    background-color: #dc2626; /* red highlight */
+  .autocomplete-items .autocomplete-active {
+    background-color: #dc2626;
     color: #fff;
   }
 
-  /* Modal specific styles */
-  #booking-confirmation-modal {
-    font-family: 'Inter', sans-serif; /* Ensure modal uses the same font */
-    display: none; /* MODAL IS HIDDEN BY DEFAULT */
-  }
-  #booking-confirmation-modal.is-visible {
-      display: flex; /* THIS CLASS WILL BE TOGGLED BY JS */
-  }
   #booking-confirmation-modal > div {
     animation: fadeInScale 0.3s ease-out;
   }
 
   @keyframes fadeInScale {
-    from {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
   }
 
-  /* Add a darker hover for cancel button */
   #modal-cancel-btn:hover {
-    background: #b91c1c !important; /* Darker red */
+    background: #b91c1c !important;
   }
 
-
-  /* Footer */
   footer {
     text-align: center;
     padding: 12px 24px;
     font-size: 0.9rem;
-    color: #b91c1c; /* dark red */
+    color: #b91c1c;
   }
 </style>
 <link
@@ -290,27 +268,18 @@
   <main>
     <section id="map" aria-label="Map showing available drivers and routes" tabindex="0"></section>
     <section id="booking-panel" aria-label="Booking panel">
-      <h2>Verify &amp; Book a Ride</h2>
+      <h2>Book a Ride</h2>
 
-      <form id="verification-form" aria-describedby="status" novalidate autocomplete="off">
-        <label for="mobile">Mobile Number</label>
-        <input type="tel" id="mobile" name="mobile" placeholder="e.g., +639171234567" autocomplete="tel" aria-required="true" required pattern="^\+?\d{10,15}$" aria-label="Mobile number" inputmode="tel" />
-        <button type="button" id="send-code-btn" disabled aria-label="Send verification code">Send Code</button>
-        <small class="small-text">Include country code (e.g., +63 for Philippines)</small>
-
-        <label for="verification-code" style="margin-top:16px;">Verification Code</label>
-        <input type="text" id="verification-code" name="verification-code" placeholder="Enter code" autocomplete="one-time-code" aria-required="true" disabled aria-label="Verification code" inputmode="numeric" />
-        <button type="button" id="verify-code-btn" disabled aria-label="Verify code">Verify</button>
-      </form>
-
-      <form id="booking-form" aria-describedby="status" style="display:none;" novalidate autocomplete="off">
+      <form id="booking-form" aria-describedby="status" novalidate autocomplete="off">
         <label for="pickup">Pick-up Location</label>
         <div class="pickup-container">
           <input type="text" id="pickup" name="pickup" placeholder="Enter pick-up address" autocomplete="off" aria-label="Pick-up location" />
           <button type="button" id="use-location-btn" aria-label="Use Current Location" title="Use Current Location"><i class="material-icons" aria-hidden="true">my_location</i></button>
         </div>
+        
         <label for="destination">Destination</label>
         <input type="text" id="destination" name="destination" placeholder="Enter destination address" autocomplete="off" aria-label="Destination location" />
+        
         <button type="submit" id="book-btn" disabled>Book Now</button>
       </form>
 
@@ -345,16 +314,16 @@
     "use strict";
 
     // --- PRICING ALGORITHM FOR PH ---
-    const BASE_FARE = 60.00; // Base fare in PHP, covers the first 2 kilometers.
-    const SUCCEEDING_KM_RATE = 10.00; // Rate per km AFTER the first 2 km.
-    const PER_MINUTE_RATE = 2.00; // Rate per minute of travel time to account for traffic.
-    const MINIMUM_FARE = 60.00; // The minimum possible fare is the base fare.
-    const INITIAL_KM_COVERED = 2.0; // The distance (in km) covered by the base fare.
+    const BASE_FARE = 60.00;
+    const SUCCEEDING_KM_RATE = 10.00;
+    const PER_MINUTE_RATE = 2.00;
+    const MINIMUM_FARE = 60.00;
+    const INITIAL_KM_COVERED = 2.0;
 
     // --- MAP INITIALIZATION ---
     const map = L.map("map", {
-      center: [12.8797, 121.7740], // Geographical center of the Philippines
-      zoom: 6, // Zoom level to fit the country
+      center: [12.8797, 121.7740],
+      zoom: 6,
       zoomControl: true,
     });
 
@@ -364,16 +333,10 @@
     }).addTo(map);
 
     // DOM elements
-    const mobileInput = document.getElementById("mobile");
-    const sendCodeBtn = document.getElementById("send-code-btn");
-    const verificationCodeInput = document.getElementById("verification-code");
-    const verifyCodeBtn = document.getElementById("verify-code-btn");
-
     const pickupInput = document.getElementById("pickup");
     const destinationInput = document.getElementById("destination");
     const bookBtn = document.getElementById("book-btn");
     const bookingForm = document.getElementById("booking-form");
-    const verificationForm = document.getElementById("verification-form");
     const useLocationBtn = document.getElementById("use-location-btn");
     const statusEl = document.getElementById("status");
 
@@ -385,7 +348,6 @@
     const modalConfirmBtn = document.getElementById("modal-confirm-btn");
     const modalCancelBtn = document.getElementById("modal-cancel-btn");
     const modalCloseBtn = document.getElementById("modal-close-btn");
-
 
     // Variables
     let pickupLatLng = null;
@@ -400,50 +362,10 @@
       iconAnchor: [18, 36],
       popupAnchor: [0, -36],
     });
-    let isVerified = false;
-    let correctVerificationCode = null;
     let estimatedFareGlobal = 0;
-    const mobileNumberRegex = /^\+?\d{10,15}$/;
-
-    mobileInput.addEventListener("input", () => {
-      sendCodeBtn.disabled = !mobileNumberRegex.test(mobileInput.value.trim());
-    });
-
-    sendCodeBtn.addEventListener("click", () => {
-      const mobileNumber = mobileInput.value.trim();
-      if (!mobileNumberRegex.test(mobileNumber)) {
-        updateStatus("Please enter a valid mobile number.");
-        return;
-      }
-      correctVerificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-      updateStatus(`Verification code sent to ${mobileNumber}. (For demo: code is ${correctVerificationCode})`);
-      verificationCodeInput.disabled = false;
-      verifyCodeBtn.disabled = false;
-      sendCodeBtn.disabled = true;
-      mobileInput.disabled = true;
-      verificationCodeInput.focus();
-    });
-
-    // --- THIS IS THE CORRECTED VERIFICATION LOGIC ---
-    verifyCodeBtn.addEventListener("click", () => {
-      const enteredCode = verificationCodeInput.value.trim();
-      if (enteredCode === correctVerificationCode) {
-        updateStatus("Mobile number verified successfully!");
-        isVerified = true;
-        
-        // Hide verification form and show booking form
-        verificationForm.style.display = "none";
-        bookingForm.style.display = "flex";
-        
-        // Disable verification fields permanently after success
-        verificationCodeInput.disabled = true;
-        verifyCodeBtn.disabled = true;
-        
-        initBookingFeatures();
-      } else {
-        updateStatus("Incorrect verification code. Please try again.");
-      }
-    });
+    
+    // --- INITIALIZE BOOKING FEATURES IMMEDIATELY ---
+    initBookingFeatures();
 
     function initBookingFeatures() {
       setAutocomplete(pickupInput);
@@ -498,7 +420,7 @@
         modalPickupAddress.textContent = pickupInput.value;
         modalDestinationAddress.textContent = destinationInput.value;
         modalFare.textContent = estimatedFareGlobal ? `₱${estimatedFareGlobal.toFixed(2)}` : "Calculating...";
-        modal.style.display = "flex"; // Show the modal
+        modal.style.display = "flex";
         bookBtn.disabled = true;
       });
     }
@@ -746,7 +668,7 @@
       modal.style.display = "none";
       modalConfirmBtn.disabled = true;
       setTimeout(() => {
-        updateStatus("Ride booked successfully! Driver is on the way.");
+        updateStatus("Ride booked successfully! A driver is on the way.");
         modalConfirmBtn.disabled = false;
         bookBtn.disabled = false;
       }, 3000);
