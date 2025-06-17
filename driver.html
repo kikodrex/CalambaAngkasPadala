@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Driver Panel</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #status { border: 1px solid #ccc; padding: 10px; min-height: 100px; }
+        button { font-size: 1.2rem; padding: 10px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Driver Control Panel</h1>
+    <button id="go-online-btn">Go Online</button>
+    <div id="status">
+        You are currently offline.
+    </div>
+
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script>
+        const goOnlineBtn = document.getElementById('go-online-btn');
+        const statusDiv = document.getElementById('status');
+        let isOnline = false;
+
+        goOnlineBtn.addEventListener('click', () => {
+            isOnline = !isOnline;
+            if (isOnline) {
+                goOnlineBtn.textContent = "Go Offline";
+                statusDiv.textContent = "You are ONLINE. Waiting for a ride request...";
+                
+                // In a real app, you would start sending GPS location here.
+                
+                // Connect to Pusher to listen for new rides
+                const pusher = new Pusher("YOUR_PUSHER_KEY", { cluster: "ap1" });
+                const channel = pusher.subscribe('booking-channel'); // Subscribes to the same channel for now
+
+                channel.bind('driver-assigned', (data) => {
+                    // This is a simplified test. In reality, the server would target a specific driver.
+                    statusDiv.innerHTML = `
+                        <strong>Ride Assigned to You!</strong><br>
+                        Rider wants to go to: ${data.destination.address}
+                    `;
+                });
+
+            } else {
+                goOnlineBtn.textContent = "Go Online";
+                statusDiv.textContent = "You are currently offline.";
+                // You would disconnect from Pusher here.
+            }
+        });
+    </script>
+</body>
+</html>
