@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Calamba Angkas Padala</title>
+<title>PH Angkas Padala</title>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
 <style>
   /* Reset & base */
@@ -280,7 +280,7 @@
 </head>
 <body>
 <header>
-  <div class="logo"><i class="material-icons" aria-hidden="true">motorcycle</i> Calamba Angkas Padala</div>
+  <div class="logo"><i class="material-icons" aria-hidden="true">motorcycle</i> PH Angkas Padala</div>
 </header>
 <div id="app">
   <main>
@@ -290,9 +290,9 @@
 
       <form id="verification-form" aria-describedby="status" novalidate autocomplete="off">
         <label for="mobile">Mobile Number</label>
-        <input type="tel" id="mobile" name="mobile" placeholder="Enter mobile number" autocomplete="tel" aria-required="true" required pattern="^\+?\d{10,15}$" aria-label="Mobile number" inputmode="tel" />
+        <input type="tel" id="mobile" name="mobile" placeholder="e.g., +639171234567" autocomplete="tel" aria-required="true" required pattern="^\+?\d{10,15}$" aria-label="Mobile number" inputmode="tel" />
         <button type="button" id="send-code-btn" disabled aria-label="Send verification code">Send Code</button>
-        <small class="small-text">Include country code if outside PH (e.g. +639...)</small>
+        <small class="small-text">Include country code (e.g., +63 for Philippines)</small>
 
         <label for="verification-code" style="margin-top:16px;">Verification Code</label>
         <input type="text" id="verification-code" name="verification-code" placeholder="Enter code" autocomplete="one-time-code" aria-required="true" disabled aria-label="Verification code" inputmode="numeric" />
@@ -329,7 +329,7 @@
   </div>
 </div>
 
-<footer>© 2024 Calamba Angkas Padala - Demo Only</footer>
+<footer>© 2024 PH Angkas Padala - Demo Only</footer>
 
 <script
   src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
@@ -340,20 +340,23 @@
   (function(){
     "use strict";
 
-    // Pricing configuration (example values for Calamba)
-    const BASE_FARE = 50; // PHP
-    const PER_KM_RATE = 15; // PHP per kilometer
-    const PER_MINUTE_RATE = 2; // PHP per minute of travel time
-    const MINIMUM_FARE = 80; // PHP
+    // --- (MODIFIED) PRICING ALGORITHM FOR PH ---
+    // This pricing model is more aligned with typical ride-hailing services in the Philippines.
+    const BASE_FARE = 60.00; // Base fare in PHP, covers the first 2 kilometers.
+    const SUCCEEDING_KM_RATE = 10.00; // Rate per km AFTER the first 2 km.
+    const PER_MINUTE_RATE = 2.00; // Rate per minute of travel time to account for traffic.
+    const MINIMUM_FARE = 60.00; // The minimum possible fare is the base fare.
+    const INITIAL_KM_COVERED = 2.0; // The distance (in km) covered by the base fare.
 
-    // Initialize the map
+    // --- (MODIFIED) MAP INITIALIZATION ---
+    // Centered to show the Philippines archipelago.
     const map = L.map("map", {
-      center: [14.2185, 121.1685], // Calamba, Laguna, PH
-      zoom: 13,
+      center: [12.8797, 121.7740], // Geographical center of the Philippines
+      zoom: 6, // Zoom level to fit the country
       zoomControl: true,
     });
 
-    // Add OpenStreetMap tiles
+    // Add OpenStreetMap tiles (a reliable, free global map provider)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: '© OpenStreetMap contributors',
@@ -389,7 +392,7 @@
     let routeLayer = null;
     let markers = []; // Stores all dynamically added markers (pickup, destination)
 
-    // Marker for customer current location (persistent if 'Use Current Location' is active)
+    // Marker for customer current location
     let currentLocationMarker = null;
 
     // Simulated driver markers
@@ -410,13 +413,12 @@
     let estimatedFareGlobal = 0;
 
 
-    // Validation regex for mobile numbers (Basic international format)
+    // Validation regex for mobile numbers
     const mobileNumberRegex = /^\+?\d{10,15}$/;
 
-    // Enable or disable Send Code button based on mobile format
+    // Enable or disable Send Code button
     mobileInput.addEventListener("input", () => {
-      const valid = mobileNumberRegex.test(mobileInput.value.trim());
-      sendCodeBtn.disabled = !valid;
+      sendCodeBtn.disabled = !mobileNumberRegex.test(mobileInput.value.trim());
     });
 
     // Simulated send verification code
@@ -426,7 +428,6 @@
         updateStatus("Please enter a valid mobile number.");
         return;
       }
-      // Generate 6-digit code
       correctVerificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       updateStatus(`Verification code sent to ${mobileNumber}. (For demo: code is ${correctVerificationCode})`);
       verificationCodeInput.disabled = false;
@@ -442,11 +443,6 @@
       if (enteredCode === correctVerificationCode) {
         updateStatus("Mobile number verified successfully!");
         isVerified = true;
-        verificationCodeInput.disabled = true;
-        verifyCodeBtn.disabled = true;
-        sendCodeBtn.disabled = true;
-        mobileInput.disabled = true;
-        // Show booking form and hide verification form
         verificationForm.style.display = "none";
         bookingForm.style.display = "flex";
         initBookingFeatures();
@@ -471,10 +467,9 @@
           (position) => {
             const { latitude, longitude } = position.coords;
             pickupLatLng = [latitude, longitude];
-            pickupInput.value = "Current Location"; // Set input value to "Current Location"
+            pickupInput.value = "Current Location";
             updateBookingButton();
 
-            // Create or update current location marker directly
             if (currentLocationMarker) {
               currentLocationMarker.setLatLng(pickupLatLng);
             } else {
@@ -490,36 +485,30 @@
               }).addTo(map);
               currentLocationMarker.bindPopup("Your Current Location").openPopup();
             }
-            map.setView(pickupLatLng, 15); // Center map on detected location
-            updateMapMarkersAndRoute(); // Redraw drivers and potentially route
-            updateStatus("Location detected. You can now choose your destination.");
+            map.setView(pickupLatLng, 15);
+            updateMapMarkersAndRoute();
+            updateStatus("Location detected. Choose your destination.");
             useLocationBtn.disabled = false;
           },
           () => {
             updateStatus("Unable to retrieve your location. Please enter manually.");
             useLocationBtn.disabled = false;
           },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-          }
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
       });
 
-      // Modify the booking form submit handler to show modal
       bookingForm.addEventListener("submit", (e) => {
         e.preventDefault();
         if (!pickupLatLng || !destinationLatLng) {
           updateStatus("Please select both pick-up and destination.");
           return;
         }
-        // Populate modal and show it instead of directly booking
         modalPickupAddress.textContent = pickupInput.value;
         modalDestinationAddress.textContent = destinationInput.value;
         modalFare.textContent = estimatedFareGlobal ? `₱${estimatedFareGlobal.toFixed(2)}` : "Calculating...";
-        modal.style.display = "flex"; // Show the modal
-        bookBtn.disabled = true; // Disable main book button while modal is open
+        modal.style.display = "flex";
+        bookBtn.disabled = true;
       });
     }
 
@@ -532,15 +521,19 @@
       };
     }
 
+    // --- (MODIFIED) GEOCODE FUNCTION ---
+    // Bounding box is now set for the entire Philippines.
     function geocode(query, callback) {
       if (!query) {
         callback([]);
         return;
       }
+      // Bounding box for the Philippines: lon_min=116.0, lat_min=4.0, lon_max=127.0, lat_max=21.0
+      const viewbox = "116.0,21.0,127.0,4.0";
       fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
           query
-        )}&addressdetails=1&limit=5&bounded=1&viewbox=120.9,14.1,121.3,14.3` // Bounding box for Calamba area
+        )}&addressdetails=1&limit=5&countrycodes=ph&bounded=1&viewbox=${viewbox}`
       )
         .then((res) => res.json())
         .then((data) => callback(data))
@@ -563,7 +556,6 @@
         inputElem.value = item.display_name;
         if (inputElem.id === "pickup") {
           pickupLatLng = [parseFloat(item.lat), parseFloat(item.lon)];
-          // If user manually types, clear currentLocationMarker if it was set
           if (currentLocationMarker) {
             map.removeLayer(currentLocationMarker);
             currentLocationMarker = null;
@@ -578,17 +570,13 @@
 
       function onInput() {
         const val = inputElem.value.trim();
-        closeSuggestions(); // Close previous suggestions
-        if (!val) {
-          return;
-        }
+        closeSuggestions();
+        if (!val) return;
         geocode(val, (results) => {
           if (results.length === 0) return;
-
           container = document.createElement("div");
-          container.setAttribute("class", "autocomplete-items"); // Use the CSS class
-          inputElem.parentNode.appendChild(container); // Append to parent of input
-
+          container.setAttribute("class", "autocomplete-items");
+          inputElem.parentNode.appendChild(container);
           results.forEach((item) => {
             let div = document.createElement("div");
             div.textContent = item.display_name;
@@ -600,41 +588,32 @@
 
       function onKeyDown(e) {
         const items = container ? container.children : [];
-        if (!items.length) return; // Only proceed if there are items
-
+        if (!items.length) return;
         if (e.key === "ArrowDown") {
-          currentFocus++;
-          if (currentFocus >= items.length) currentFocus = 0;
+          currentFocus = (currentFocus + 1) % items.length;
           setActive(items);
-          e.preventDefault(); // Prevent cursor movement in input
+          e.preventDefault();
         } else if (e.key === "ArrowUp") {
-          currentFocus--;
-          if (currentFocus < 0) currentFocus = items.length - 1;
+          currentFocus = (currentFocus - 1 + items.length) % items.length;
           setActive(items);
-          e.preventDefault(); // Prevent cursor movement in input
+          e.preventDefault();
         } else if (e.key === "Enter") {
           e.preventDefault();
-          if (currentFocus > -1) {
-            items[currentFocus].click();
-          }
+          if (currentFocus > -1) items[currentFocus].click();
         }
       }
 
       function setActive(items) {
-        for (let i = 0; i < items.length; i++) {
-          items[i].classList.remove("autocomplete-active"); // Use classList
-        }
+        Array.from(items).forEach(item => item.classList.remove("autocomplete-active"));
         if (currentFocus > -1) {
-          items[currentFocus].classList.add("autocomplete-active"); // Use classList
-          // Scroll into view if needed
-          items[currentFocus].scrollIntoView({ block: "nearest" });
+            items[currentFocus].classList.add("autocomplete-active");
+            items[currentFocus].scrollIntoView({ block: "nearest" });
         }
       }
 
       inputElem.addEventListener("input", debounce(onInput, 300));
       inputElem.addEventListener("keydown", onKeyDown);
       document.addEventListener("click", (e) => {
-        // Check if click is outside input and its autocomplete container
         if (e.target !== inputElem && (!container || !container.contains(e.target))) {
           closeSuggestions();
         }
@@ -652,52 +631,40 @@
         map.removeLayer(routeLayer);
         routeLayer = null;
       }
-      // Do NOT remove currentLocationMarker here if it's meant to persist independently
-      // It's managed in useLocationBtn click and input change events.
     }
 
     function updateMapMarkersAndRoute() {
-      clearMap(); // Clears all general markers and route
+      clearMap();
 
-      // Add pickup marker ONLY if it's not the "Current Location" marker
       if (pickupLatLng && pickupInput.value !== "Current Location") {
         const pickupMarker = L.marker(pickupLatLng, {
           icon: L.icon({
-            iconUrl:
-              "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+            iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
             iconSize: [36, 36],
-            iconAnchor: [18, 36],
-            popupAnchor: [0, -36],
-            className: "pickup-marker",
+            iconAnchor: [18, 36]
           }),
         }).addTo(map);
         pickupMarker.bindPopup("Pick-up").openPopup();
         markers.push(pickupMarker);
-      } else if (pickupLatLng && pickupInput.value === "Current Location" && currentLocationMarker) {
-        // If "Current Location" is active, ensure its popup is open
+      } else if (pickupLatLng && currentLocationMarker) {
         currentLocationMarker.bindPopup("Your Current Location").openPopup();
       }
 
       if (destinationLatLng) {
         const destMarker = L.marker(destinationLatLng, {
           icon: L.icon({
-            iconUrl:
-              "https://cdn-icons-png.flaticon.com/512/854/854878.png",
+            iconUrl: "https://cdn-icons-png.flaticon.com/512/854/854878.png",
             iconSize: [36, 36],
-            iconAnchor: [18, 36],
-            popupAnchor: [0, -36],
-            className: "destination-marker",
+            iconAnchor: [18, 36]
           }),
         }).addTo(map);
         destMarker.bindPopup("Destination").openPopup();
         markers.push(destMarker);
       }
 
-      // Recreate simulated drivers near pickup if available, else near map center
       simulatedDrivers.forEach((d) => map.removeLayer(d.marker));
       simulatedDrivers.length = 0;
-      createSimulatedDrivers(pickupLatLng || map.getCenter(), 6, 3000);
-
+      createSimulatedDrivers(pickupLatLng || map.getCenter(), 10, 50000); // Larger radius for national view
 
       if (pickupLatLng && destinationLatLng) {
         fetchRoute(pickupLatLng, destinationLatLng);
@@ -710,7 +677,7 @@
 
     function fetchRoute(start, end) {
       const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
-      updateStatus("Calculating route and fare..."); // Add a loading status
+      updateStatus("Calculating route and fare...");
       fetch(url)
         .then((res) => res.json())
         .then((data) => {
@@ -718,24 +685,26 @@
             const route = data.routes[0];
             const coords = route.geometry.coordinates.map((c) => [c[1], c[0]]);
             routeLayer && map.removeLayer(routeLayer);
-            routeLayer = L.polyline(coords, {
-              color: "#dc2626",
-              weight: 5,
-              opacity: 0.8,
-            }).addTo(map);
+            routeLayer = L.polyline(coords, { color: "#dc2626", weight: 5, opacity: 0.8 }).addTo(map);
             map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
 
-            const distanceKm = route.distance / 1000; // meters to km
-            const durationMinutes = route.duration / 60; // seconds to minutes
+            const distanceKm = route.distance / 1000;
+            const durationMinutes = route.duration / 60;
 
-            let estimatedFare = BASE_FARE + (distanceKm * PER_KM_RATE) + (durationMinutes * PER_MINUTE_RATE);
+            // --- (MODIFIED) FARE CALCULATION LOGIC ---
+            let distanceFare = 0;
+            if (distanceKm > INITIAL_KM_COVERED) {
+                distanceFare = (distanceKm - INITIAL_KM_COVERED) * SUCCEEDING_KM_RATE;
+            }
+            const timeFare = durationMinutes * PER_MINUTE_RATE;
+            let estimatedFare = BASE_FARE + distanceFare + timeFare;
             estimatedFare = Math.max(estimatedFare, MINIMUM_FARE); // Ensure minimum fare
-            estimatedFare = Math.round(estimatedFare / 5) * 5; // Round to nearest 5 for typical pricing
+            estimatedFare = Math.round(estimatedFare / 5) * 5; // Round to nearest 5 for convenience
 
-            estimatedFareGlobal = estimatedFare; // Store it globally for the modal
+            estimatedFareGlobal = estimatedFare;
 
             updateStatus(
-              `Route estimated: ${distanceKm.toFixed(2)} km, approx. ${durationMinutes.toFixed(0)} mins. ` +
+              `Route: ${distanceKm.toFixed(2)} km, approx. ${durationMinutes.toFixed(0)} mins. ` +
               `Estimated Fare: ₱${estimatedFare.toFixed(2)}`
             );
           } else {
@@ -746,28 +715,11 @@
           updateStatus("Route service is unavailable.");
         });
     }
-
-    // Distance calculation between latlng pairs (meters)
-    function distanceMeters(latlng1, latlng2) {
-      const R = 6371e3;
-      const φ1 = latlng1[0] * Math.PI / 180;
-      const φ2 = latlng2[0] * Math.PI / 180;
-      const Δφ = (latlng2[0] - latlng1[0]) * Math.PI / 180;
-      const Δλ = (latlng2[1] - latlng1[1]) * Math.PI / 180;
-
-      const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-        Math.cos(φ1) * Math.cos(φ2) *
-        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-      return R * c;
-    }
-
+    
     // Simulated drivers functions
-    function createSimulatedDrivers(center, count = 6, radius = 3000) {
-      // Clear existing drivers before creating new ones
+    function createSimulatedDrivers(center, count, radius) {
       simulatedDrivers.forEach(d => map.removeLayer(d.marker));
-      simulatedDrivers.length = 0; // Reset array
+      simulatedDrivers.length = 0;
       for (let i = 0; i < count; i++) {
         const randomPoint = randomPointInRadius(center, radius);
         const marker = L.marker(randomPoint, { icon: driverIcon }).addTo(map);
@@ -779,66 +731,53 @@
     function randomPointInRadius(center, radius) {
       const y0 = center[0];
       const x0 = center[1];
-      const rd = radius / 111300; // roughly 111.3 km per degree lat
-
+      const rd = radius / 111300;
       const u = Math.random();
       const v = Math.random();
-
       const w = rd * Math.sqrt(u);
       const t = 2 * Math.PI * v;
       const x = w * Math.cos(t);
       const y = w * Math.sin(t);
-
-      const newX = x / Math.cos(y0 * (Math.PI / 180)); // Adjust longitude for latitude
-
-      const foundLat = y0 + y * (180 / Math.PI);
-      const foundLng = x0 + newX * (180 / Math.PI);
-
-      return [foundLat, foundLng];
+      const newX = x / Math.cos(y0 * (Math.PI / 180));
+      return [y0 + y, x0 + newX];
     }
 
     function updateSimulatedDrivers() {
       simulatedDrivers.forEach(driver => {
-        // Move drivers slightly
-        const newPoint = randomPointInRadius(driver.latlng, 50); // Move within 50m radius
+        const newPoint = randomPointInRadius(driver.latlng, 500); // Move within 500m
         driver.latlng = newPoint;
         driver.marker.setLatLng(newPoint);
       });
     }
 
-    // Update status UI (consolidated function)
     function updateStatus(message) {
       statusEl.textContent = message;
     }
 
-    // Start drivers animation
     setInterval(updateSimulatedDrivers, 4000);
-
 
     // Event listeners for the modal buttons
     modalConfirmBtn.addEventListener("click", () => {
       updateStatus("Booking your ride...");
       modal.style.display = "none";
-      modalConfirmBtn.disabled = true; // Disable to prevent double click
-
-      // Simulated booking delay
+      modalConfirmBtn.disabled = true;
       setTimeout(() => {
         updateStatus("Ride booked successfully! Driver is on the way.");
         modalConfirmBtn.disabled = false;
-        bookBtn.disabled = false; // Re-enable main book button after booking
+        bookBtn.disabled = false;
       }, 3000);
     });
 
     modalCancelBtn.addEventListener("click", () => {
       modal.style.display = "none";
       updateStatus("Booking cancelled.");
-      bookBtn.disabled = false; // Re-enable main book button
+      bookBtn.disabled = false;
     });
 
     modalCloseBtn.addEventListener("click", () => {
       modal.style.display = "none";
       updateStatus("Booking flow interrupted.");
-      bookBtn.disabled = false; // Re-enable main book button
+      bookBtn.disabled = false;
     });
 
   })();
