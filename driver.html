@@ -177,7 +177,7 @@
         }).addTo(map);
 
         // --- PUSHER SETUP ---
-        if (!PUSHER_KEY || PUSHER_KEY === "YOUR_PUBLIC_PUSHER_KEY") {
+        if (!PUSHER_KEY || PUSHER_KEY === "2145cc5c326a430b3ffa") {
             document.querySelector('.container').innerHTML = '<h1>ERROR: Pusher Key is not set in driver.html.</h1>';
         } else {
             const pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
