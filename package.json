@@ -15,7 +15,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "pusher": "^5.2.0",
-    "@vercel/kv": "^1.0.1"
+    "@upstash/redis": "^1.35.0",
+    "@vercel/kv": "^1.0.1",
+    "pusher": "^5.2.0"
   }
 }
