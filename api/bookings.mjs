@@ -1,8 +1,8 @@
 // In file: /api/bookings.mjs
 
+import { kv } from '@vercel/kv';
 import Pusher from 'pusher';
 
-// Initialize Pusher using the secure environment variables
 const pusher = new Pusher({
   appId: process.env.PUSHER_APP_ID,
   key: process.env.PUSHER_KEY,
@@ -12,51 +12,45 @@ const pusher = new Pusher({
 });
 
 export default async function handler(request, response) {
-  // Set CORS headers
-  response.setHeader('Access-Control-Allow-Origin', '*');
-  response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (request.method === 'OPTIONS') {
-    return response.status(200).end();
+  if (request.method !== 'POST') {
+    return response.status(405).end();
   }
-  
-  if (request.method === 'POST') {
-    const bookingDetails = request.body;
-    console.log('New Booking Request Received:', bookingDetails);
 
-    // --- PUSHER INTEGRATION ---
-    // In a real app, you would create a unique channel for each booking.
-    // For this tutorial, we will use a single, hardcoded channel name.
-    const channelName = 'booking-channel';
-    const eventName = 'driver-assigned';
-    
-    // This is the data we will push to the rider's browser.
-    const driverData = {
-      name: "Juan Dela Cruz",
-      vehicle: "Yamaha NMAX - Red",
-      eta: "5 mins",
-      lat: bookingDetails.pickup.lat + 0.005, // Simulate driver nearby
-      lon: bookingDetails.pickup.lon + 0.005
-    };
-    
-    // Simulate a delay as if we are finding a driver
-    setTimeout(async () => {
-      try {
-        console.log(`Triggering Pusher event '${eventName}' on channel '${channelName}'`);
-        await pusher.trigger(channelName, eventName, driverData);
-        console.log("Pusher event triggered successfully.");
-      } catch (error) {
-        console.error("Pusher trigger error:", error);
-      }
-    }, 5000); // 5-second delay
+  const bookingDetails = request.body;
 
-    // Immediately confirm to the user that we are searching.
-    return response.status(201).json({
-        message: 'Booking request received! Searching for a driver...',
-        bookingId: `bk_${Date.now()}`
+  try {
+    // 1. Find the nearest available driver (This is a simplified simulation)
+    const availableDrivers = await kv.smembers('available_drivers');
+    if (availableDrivers.length === 0) {
+      return response.status(400).json({ message: "No drivers available." });
+    }
+    // For this example, we just pick the first available driver.
+    const driverId = availableDrivers[0];
+
+    // 2. Get the driver's details (including location, etc.)
+    const driver = await kv.hgetall(driverId);
+
+    // 3. Create a unique booking ID
+    const bookingId = `bk_${Date.now()}`;
+
+    // 4. Send the ride request to the specific driver's channel
+    const driverChannel = `driver-${driverId}`;
+    await pusher.trigger(driverChannel, 'new-ride-request', {
+      bookingId: bookingId,
+      pickup: bookingDetails.pickup,
+      destination: bookingDetails.destination
     });
-  }
 
-  response.status(405).end(`Method ${request.method} Not Allowed`);
+    console.log(`Sent ride request to driver ${driverId} on channel ${driverChannel}`);
+
+    // 5. Respond to the rider
+    response.status(201).json({
+      message: 'Booking request sent to driver. Waiting for confirmation...',
+      bookingId: bookingId
+    });
+
+  } catch (error) {
+    console.error(error);
+    response.status(500).json({ error: 'Booking failed.' });
+  }
 }
