@@ -3,54 +3,64 @@
 import { kv } from '@vercel/kv';
 import Pusher from 'pusher';
 
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID,
-  key: process.env.PUSHER_KEY,
-  secret: process.env.PUSHER_SECRET,
-  cluster: process.env.PUSHER_CLUSTER,
-  useTLS: true
-});
-
 export default async function handler(request, response) {
-  if (request.method !== 'POST') {
-    return response.status(405).end();
-  }
+    console.log("--- /api/bookings function started ---");
 
-  const bookingDetails = request.body;
-
-  try {
-    // 1. Find the nearest available driver (This is a simplified simulation)
-    const availableDrivers = await kv.smembers('available_drivers');
-    if (availableDrivers.length === 0) {
-      return response.status(400).json({ message: "No drivers available." });
+    if (request.method !== 'POST') {
+        return response.status(405).end();
     }
-    // For this example, we just pick the first available driver.
-    const driverId = availableDrivers[0];
+    
+    // DEBUG: Log the environment variables to see what the server is using.
+    console.log("Attempting to use Pusher App ID:", process.env.PUSHER_APP_ID);
+    console.log("Attempting to use Pusher Key:", process.env.PUSHER_KEY);
+    console.log("Attempting to use Pusher Cluster:", process.env.PUSHER_CLUSTER);
+    // We never log the secret for security reasons.
 
-    // 2. Get the driver's details (including location, etc.)
-    const driver = await kv.hgetall(driverId);
+    try {
+        // Initialize Pusher using the secure environment variables from Vercel
+        const pusher = new Pusher({
+            appId: process.env.PUSHER_APP_ID,
+            key: process.env.PUSHER_KEY,
+            secret: process.env.PUSHER_SECRET,
+            cluster: process.env.PUSHER_CLUSTER,
+            useTLS: true
+        });
+        console.log("Pusher SDK initialized successfully.");
 
-    // 3. Create a unique booking ID
-    const bookingId = `bk_${Date.now()}`;
+        const bookingDetails = request.body;
 
-    // 4. Send the ride request to the specific driver's channel
-    const driverChannel = `driver-${driverId}`;
-    await pusher.trigger(driverChannel, 'new-ride-request', {
-      bookingId: bookingId,
-      pickup: bookingDetails.pickup,
-      destination: bookingDetails.destination
-    });
+        // Find the nearest available driver (simplified: gets the first one)
+        const availableDrivers = await kv.smembers('available_drivers');
+        console.log("Available drivers found in DB:", availableDrivers);
 
-    console.log(`Sent ride request to driver ${driverId} on channel ${driverChannel}`);
+        if (!availableDrivers || availableDrivers.length === 0) {
+            return response.status(400).json({ message: "We're sorry, no drivers are available right now." });
+        }
+        
+        const driverId = availableDrivers[0];
+        const bookingId = `bk_${Date.now()}`;
+        const driverChannel = `private-driver-${driverId}`; // In a real app, you'd target a specific driver
 
-    // 5. Respond to the rider
-    response.status(201).json({
-      message: 'Booking request sent to driver. Waiting for confirmation...',
-      bookingId: bookingId
-    });
+        // For our enhanced driver panel, we need to send the booking to a specific channel.
+        // But for simplicity to close the loop, we will use the general booking channel.
+        const channelName = 'booking-channel';
+        const eventName = 'new-ride-request';
 
-  } catch (error) {
-    console.error(error);
-    response.status(500).json({ error: 'Booking failed.' });
-  }
+        console.log(`Triggering Pusher event '${eventName}' on channel '${channelName}'`);
+        await pusher.trigger(channelName, eventName, {
+            bookingId: bookingId,
+            ...bookingDetails
+        });
+        console.log("Pusher event triggered successfully.");
+
+        response.status(201).json({
+            message: 'Booking request sent! Searching for a driver...',
+            bookingId: bookingId
+        });
+
+    } catch (error) {
+        console.error("CRITICAL ERROR in /api/bookings:", error);
+        // This will send a detailed error back if Pusher fails to initialize
+        response.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
 }
