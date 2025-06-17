@@ -2,16 +2,19 @@
   "name": "ride-app",
   "version": "1.0.0",
   "type": "module",
-  "description": "",
+  "description": "A ride-hailing application with a frontend and serverless API.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "leaflet",
+    "pusher",
+    "vercel"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "pusher": "^5.2.0"  // Version may vary
+    "pusher": "^5.2.0"
   }
 }
-
