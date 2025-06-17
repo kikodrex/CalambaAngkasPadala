@@ -9,6 +9,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "pusher": "^5.2.0"  // Version may vary
+  }
 }
 
