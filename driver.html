@@ -79,6 +79,7 @@
         let locationInterval = null;
         let rideRequestInterval = null;
         let myMarker = null;
+        let currentRideData = null; // To store accepted ride details
 
         // --- AUDIO ---
         const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3');
@@ -88,7 +89,7 @@
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
 
         // =================================================================
-        // NEW DEBUGGING BLOCK
+        // NEW DEBUGGING BLOCK (Unchanged)
         // =================================================================
         try {
             console.log("--- Starting Pusher Connection ---");
@@ -106,7 +107,6 @@
             console.log("Pusher object initialized successfully.");
 
             // 3. Subscribe to the channel
-            // In a real app, this channel name would be unique to the driver
             const channelName = 'booking-channel';
             const channel = pusher.subscribe(channelName);
             console.log(`Subscribing to channel: '${channelName}'`);
@@ -122,21 +122,330 @@
             statusCard.innerHTML += `<p style="color:green;">Pusher connected.</p>`;
 
         } catch (error) {
-            // If any step above fails, this will catch the error
             console.error("PUSHER SETUP FAILED:", error);
             statusCard.innerHTML = `<p style="color:red; font-weight:bold;">PUSHER ERROR:</p><p style="color:red;">${error.message}</p>`;
         }
         
-        // --- CORE FUNCTIONS (Unchanged from before) ---
-        // [All other functions like updateStatusOnServer, startBroadcastingLocation, etc., go here]
-        function updateStatusOnServer(newStatus, location) { fetch('/api/driver-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ driverId: DRIVER_ID, status: newStatus, location }) }).catch(error => console.error('Failed to update status on server:', error)); }
-        function startBroadcastingLocation() { if (locationInterval) clearInterval(locationInterval); const broadcast = () => { navigator.geolocation.getCurrentPosition(position => { const location = { lat: position.coords.latitude, lon: position.coords.longitude }; updateStatusOnServer('online', location); const latLng = [location.lat, location.lon]; if (myMarker) { myMarker.setLatLng(latLng); } else { const driverIcon = L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448633.png", iconSize: [40, 40], iconAnchor: [20, 40] }); myMarker = L.marker(latLng, { icon: driverIcon }).addTo(map); } map.panTo(latLng); }, (error) => console.error("Geolocation error:", error), { enableHighAccuracy: true }); }; broadcast(); locationInterval = setInterval(broadcast, LOCATION_BROADCAST_INTERVAL); }
-        function stopBroadcastingLocation() { if (locationInterval) clearInterval(locationInterval); locationInterval = null; updateStatusOnServer('offline', null); if (myMarker) { map.removeLayer(myMarker); myMarker = null; } }
-        function showRideRequest(bookingData) { notificationSound.play(); rideDetailsEl.innerHTML = `<p><strong>From:</strong> ${bookingData.pickup.address}</p><p><strong>To:</strong> ${bookingData.destination.address}</p>`; rideRequestCard.style.display = 'block'; let countdown = RIDE_REQUEST_TIMEOUT; countdownTimerEl.textContent = countdown; acceptBtn.onclick = () => acceptRide(bookingData.bookingId); rejectBtn.onclick = () => rejectRide(); rideRequestInterval = setInterval(() => { countdown--; countdownTimerEl.textContent = countdown; if (countdown <= 0) { rejectRide(); } }, 1000); }
-        function hideRideRequest() { if (rideRequestInterval) clearInterval(rideRequestInterval); rideRequestInterval = null; rideRequestCard.style.display = 'none'; }
-        async function acceptRide(bookingId) { hideRideRequest(); statusCard.innerHTML = `<p>Accepting ride ${bookingId}...</p>`; try { const response = await fetch('/api/accept-booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId, driverId: DRIVER_ID }) }); if (!response.ok) throw new Error("Failed to accept booking."); statusCard.innerHTML = `<p><strong>Ride Accepted!</strong><br>Navigating to pickup...</p>`; } catch (error) { console.error("Accept ride error:", error); statusCard.innerHTML = `<p style="color:red">Error accepting ride.</p>`; } }
-        function rejectRide() { hideRideRequest(); console.log("Ride rejected."); }
-        toggleBtn.addEventListener('click', () => { isOnline = !isOnline; toggleBtn.innerHTML = isOnline ? '<i class="material-icons">wifi_off</i>Go Offline' : '<i class="material-icons">wifi</i>Go Online'; toggleBtn.className = isOnline ? 'online' : 'offline'; if (isOnline) { onlineStatusDisplay.textContent = "ONLINE"; onlineStatusDisplay.style.color = 'var(--success-color)'; map.setZoom(15); startBroadcastingLocation(); } else { onlineStatusDisplay.textContent = "OFFLINE"; onlineStatusDisplay.style.color = 'var(--danger-color)'; stopBroadcastingLocation(); } });
+        // --- CORE FUNCTIONS ---
+        function updateStatusOnServer(newStatus, location) {
+            fetch('/api/driver-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ driverId: DRIVER_ID, status: newStatus, location })
+            }).catch(error => console.error('Failed to update status on server:', error));
+        }
+
+        function startBroadcastingLocation() {
+            if (locationInterval) clearInterval(locationInterval);
+            const broadcast = () => {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const location = { lat: position.coords.latitude, lon: position.coords.longitude };
+                    updateStatusOnServer('online', location);
+                    const latLng = [location.lat, location.lon];
+                    if (myMarker) {
+                        myMarker.setLatLng(latLng);
+                    } else {
+                        const driverIcon = L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448633.png", iconSize: [40, 40], iconAnchor: [20, 40] });
+                        myMarker = L.marker(latLng, { icon: driverIcon }).addTo(map);
+                    }
+                    map.panTo(latLng);
+                }, (error) => console.error("Geolocation error:", error), { enableHighAccuracy: true });
+            };
+            broadcast();
+            locationInterval = setInterval(broadcast, LOCATION_BROADCAST_INTERVAL);
+        }
+
+        function stopBroadcastingLocation() {
+            if (locationInterval) clearInterval(locationInterval);
+            locationInterval = null;
+            updateStatusOnServer('offline', null);
+            if (myMarker) {
+                map.removeLayer(myMarker);
+                myMarker = null;
+            }
+        }
+
+        function showRideRequest(bookingData) {
+            notificationSound.play();
+            currentRideData = bookingData; // Store bookingData for later use
+            rideDetailsEl.innerHTML = `
+                <p><strong>From:</strong> ${bookingData.pickup.address}</p>
+                <p><strong>To:</strong> ${bookingData.destination.address}</p>
+                <p><strong>Distance:</strong> ${bookingData.distance} km</p>
+                <p><strong>Fare:</strong> PHP ${bookingData.fare}</p>
+            `;
+            rideRequestCard.style.display = 'block';
+
+            let countdown = RIDE_REQUEST_TIMEOUT;
+            countdownTimerEl.textContent = countdown;
+
+            // Pass the entire bookingData object to acceptRide
+            acceptBtn.onclick = () => acceptRide(bookingData);
+            rejectBtn.onclick = () => rejectRide();
+
+            rideRequestInterval = setInterval(() => {
+                countdown--;
+                countdownTimerEl.textContent = countdown;
+                if (countdown <= 0) {
+                    rejectRide();
+                }
+            }, 1000);
+        }
+
+        function hideRideRequest() {
+            if (rideRequestInterval) clearInterval(rideRequestInterval);
+            rideRequestInterval = null;
+            rideRequestCard.style.display = 'none';
+            currentRideData = null; // Clear current ride data
+        }
+
+        // --- NEW / MODIFIED FUNCTIONS ---
+
+        let pickupMarker = null; // To store the pickup location marker
+        let destinationMarker = null; // To store the destination location marker
+
+        async function acceptRide(bookingData) {
+            hideRideRequest(); // This also clears currentRideData
+            currentRideData = bookingData; // Re-store accepted ride data
+            statusCard.innerHTML = `<p>Accepting ride ${bookingData.bookingId}...</p>`;
+
+            try {
+                const response = await fetch('/api/accept-booking', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookingId: bookingData.bookingId, driverId: DRIVER_ID })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to accept booking.");
+                }
+
+                // --- SUCCESSFUL ACCEPTANCE: Update UI for Navigation ---
+                statusCard.innerHTML = `
+                    <h2>Current Ride</h2>
+                    <p><strong>Status:</strong> Navigating to Pickup</p>
+                    <p><strong>Pickup:</strong> ${bookingData.pickup.address}</p>
+                    <p><strong>Destination:</strong> ${bookingData.destination.address}</p>
+                    <button id="arrived-btn" style="background-color: var(--info-color); margin-top: 10px; width: 100%;">
+                        <i class="material-icons">room</i> Arrived at Pickup
+                    </button>
+                `;
+
+                // Display Pickup Marker on Map
+                if (bookingData.pickup && bookingData.pickup.lat && bookingData.pickup.lon) {
+                    const pickupLatLng = [bookingData.pickup.lat, bookingData.pickup.lon];
+                    if (pickupMarker) map.removeLayer(pickupMarker); // Remove old pickup marker if any
+                    if (destinationMarker) map.removeLayer(destinationMarker); // Remove old destination marker if any
+                    pickupMarker = L.marker(pickupLatLng, {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                        })
+                    }).addTo(map).bindPopup(`<b>Pickup:</b> ${bookingData.pickup.address}`).openPopup();
+                    map.flyTo(pickupLatLng, 15); // Center map on pickup
+                }
+
+                // Add event listener for "Arrived at Pickup" button
+                document.getElementById('arrived-btn').addEventListener('click', handleArrivedAtPickup);
+
+            } catch (error) {
+                console.error("Accept ride error:", error);
+                statusCard.innerHTML = `<p style="color:red">Error accepting ride.</p>`;
+            }
+        }
+
+        // New function for handling arrival at pickup
+        async function handleArrivedAtPickup() {
+            if (!currentRideData) {
+                console.error("No current ride data to mark as arrived.");
+                return;
+            }
+
+            statusCard.innerHTML = `<p>Notifying backend of arrival...</p>`;
+
+            try {
+                // Optional: Send update to backend that driver has arrived
+                const response = await fetch('/api/driver-arrived', { // You'll need to create this endpoint
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookingId: currentRideData.bookingId, driverId: DRIVER_ID })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to notify arrival to backend.");
+                }
+
+                // Update UI for waiting at pickup
+                statusCard.innerHTML = `
+                    <h2>Current Ride</h2>
+                    <p><strong>Status:</strong> Arrived at Pickup. Waiting for rider...</p>
+                    <p><strong>Pickup:</strong> ${currentRideData.pickup.address}</p>
+                    <p><strong>Destination:</strong> ${currentRideData.destination.address}</p>
+                    <button id="start-ride-btn" style="background-color: var(--success-color); margin-top: 10px; width: 100%;">
+                        <i class="material-icons">play_arrow</i> Start Ride
+                    </button>
+                `;
+
+                // Remove pickup marker
+                if (pickupMarker) {
+                    map.removeLayer(pickupMarker);
+                    pickupMarker = null;
+                }
+
+                // Add event listener for "Start Ride" button
+                document.getElementById('start-ride-btn').addEventListener('click', handleStartRide);
+
+            } catch (error) {
+                console.error("Error marking arrival:", error);
+                statusCard.innerHTML = `<p style="color:red">Error marking arrival.</p>`;
+            }
+        }
+
+        // New function for handling starting the ride
+        async function handleStartRide() {
+            if (!currentRideData) {
+                console.error("No current ride data to start.");
+                return;
+            }
+
+            statusCard.innerHTML = `<p>Starting ride...</p>`;
+
+            try {
+                // Optional: Send update to backend that ride has started
+                const response = await fetch('/api/start-ride', { // You'll need to create this endpoint
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookingId: currentRideData.bookingId, driverId: DRIVER_ID })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to notify ride start to backend.");
+                }
+
+                // Update UI for active ride
+                statusCard.innerHTML = `
+                    <h2>Current Ride</h2>
+                    <p><strong>Status:</strong> Ride in Progress!</p>
+                    <p><strong>Driving to:</strong> ${currentRideData.destination.address}</p>
+                    <button id="end-ride-btn" style="background-color: var(--danger-color); margin-top: 10px; width: 100%;">
+                        <i class="material-icons">flag</i> End Ride
+                    </button>
+                `;
+
+                // Add destination marker and pan map
+                if (currentRideData.destination && currentRideData.destination.lat && currentRideData.destination.lon) {
+                    const destinationLatLng = [currentRideData.destination.lat, currentRideData.destination.lon];
+                    if (destinationMarker) map.removeLayer(destinationMarker); // Remove old destination marker if any
+                    destinationMarker = L.marker(destinationLatLng, {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png', // Blue marker for destination
+                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                        })
+                    }).addTo(map).bindPopup(`<b>Destination:</b> ${currentRideData.destination.address}`).openPopup();
+                    map.flyTo(destinationLatLng, 15); // Optionally center map on destination
+                }
+
+                document.getElementById('end-ride-btn').addEventListener('click', handleEndRide);
+
+            } catch (error) {
+                console.error("Error starting ride:", error);
+                statusCard.innerHTML = `<p style="color:red">Error starting ride.</p>`;
+            }
+        }
+
+        // New function for ending the ride
+        async function handleEndRide() {
+            if (!currentRideData) {
+                console.error("No current ride data to end.");
+                return;
+            }
+
+            statusCard.innerHTML = `<p>Ending ride...</p>`;
+
+            try {
+                // Optional: Send update to backend that ride has ended
+                const response = await fetch('/api/end-ride', { // You'll need to create this endpoint
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookingId: currentRideData.bookingId, driverId: DRIVER_ID })
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to notify ride end to backend.");
+                }
+
+                // Clear UI for ride and reset
+                statusCard.innerHTML = `
+                    <h2>Your Status</h2>
+                    <p><strong>ID:</strong> <span id="driver-id-display">${DRIVER_ID}</span></p>
+                    <p><strong>State:</strong> <span id="online-status-display" style="font-weight:bold; color: var(--success-color);">ONLINE</span></p>
+                    <p>Ride completed! Ready for next.</p>
+                `;
+                // Reset state for next ride
+                currentRideData = null;
+                
+                // Remove all temporary markers (pickup/destination) from map
+                if (pickupMarker) {
+                    map.removeLayer(pickupMarker);
+                    pickupMarker = null;
+                }
+                if (destinationMarker) {
+                    map.removeLayer(destinationMarker);
+                    destinationMarker = null;
+                }
+                
+                // Ensure the online status display is correctly set for next ride
+                onlineStatusDisplay.textContent = "ONLINE";
+                onlineStatusDisplay.style.color = 'var(--success-color)';
+
+            } catch (error) {
+                console.error("Error ending ride:", error);
+                statusCard.innerHTML = `<p style="color:red">Error ending ride.</p>`;
+            }
+        }
+
+
+        function rejectRide() {
+            hideRideRequest();
+            console.log("Ride rejected.");
+            // Optional: Notify backend of rejection
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            isOnline = !isOnline;
+            toggleBtn.innerHTML = isOnline ? '<i class="material-icons">wifi_off</i>Go Offline' : '<i class="material-icons">wifi</i>Go Online';
+            toggleBtn.className = isOnline ? 'online' : 'offline';
+            if (isOnline) {
+                onlineStatusDisplay.textContent = "ONLINE";
+                onlineStatusDisplay.style.color = 'var(--success-color)';
+                map.setZoom(15);
+                startBroadcastingLocation();
+            } else {
+                onlineStatusDisplay.textContent = "OFFLINE";
+                onlineStatusDisplay.style.color = 'var(--danger-color)';
+                stopBroadcastingLocation();
+                // Clear any active ride related UI/markers when going offline
+                statusCard.innerHTML = `
+                    <h2>Your Status</h2>
+                    <p><strong>ID:</strong> <span id="driver-id-display">${DRIVER_ID}</span></p>
+                    <p><strong>State:</strong> <span id="online-status-display" style="font-weight:bold; color: var(--danger-color);">OFFLINE</span></p>
+                `;
+                if (currentRideData) { // If there was an active ride, reset it
+                    currentRideData = null;
+                }
+                // Also remove any remaining ride-specific markers if going offline
+                if (pickupMarker) {
+                    map.removeLayer(pickupMarker);
+                    pickupMarker = null;
+                }
+                if (destinationMarker) {
+                    map.removeLayer(destinationMarker);
+                    destinationMarker = null;
+                }
+            }
+        });
     </script>
 </body>
 </html>
