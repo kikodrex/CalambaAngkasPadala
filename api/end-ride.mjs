@@ -1,28 +1,22 @@
 // api/end-ride.js
 
-// Import Pusher for server-side use
 import Pusher from 'pusher';
-// Import Vercel KV client
-import { createClient } from '@vercel/kv';
+import { Redis } from '@upstash/redis'; // Updated import
 
-// Configure Pusher (these must be set as Vercel Environment Variables!)
 const pusher = new Pusher({
   appId: process.env.PUSHER_APP_ID,
   key: process.env.PUSHER_KEY,
-  secret: process.env.PUSher_SECRET,
+  secret: process.env.PUSHER_SECRET,
   cluster: process.env.PUSHER_CLUSTER,
   useTLS: true,
 });
 
-// Configure Vercel KV client (these must be set as Vercel Environment Variables!)
-const kv = createClient({
-  url: process.env.KV_REST_API_URL,
-  token: process.env.KV_REST_API_TOKEN,
+const redis = new Redis({ // Changed 'kv' to 'redis'
+  url: process.env.UPSTASH_REDIS_REST_URL, // Updated ENV VAR NAME
+  token: process.env.UPSTASH_REDIS_REST_TOKEN, // Updated ENV VAR NAME
 });
 
-// This is your serverless function handler for the /api/end-ride endpoint
 export default async function handler(req, res) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
@@ -34,48 +28,37 @@ export default async function handler(req, res) {
   }
 
   try {
-    // --- Backend Logic to End Ride ---
-    // 1. Fetch the booking from your Vercel KV database
-    const booking = await kv.hgetall(`booking:${bookingId}`);
+    console.log(`API: end-ride - Driver ${driverId} attempting to end booking ${bookingId}.`);
+    const booking = await redis.hgetall(`booking:${bookingId}`); // Changed 'kv' to 'redis'
 
-    if (!booking) {
+    if (!booking || Object.keys(booking).length === 0) {
+        console.error(`API: end-ride - Booking ${bookingId} not found or empty in Upstash Redis.`);
         return res.status(404).json({ message: 'Booking not found' });
     }
-    // Validate that the driverId matches the one assigned to the booking
     if (booking.driverId !== driverId) {
+        console.warn(`API: end-ride - Unauthorized driver ${driverId} for booking ${bookingId}. Expected ${booking.driverId}`);
         return res.status(403).json({ message: 'Unauthorized: Driver not assigned to this booking' });
     }
-    // Validate the current status of the booking (should be 'in_progress')
     if (booking.status !== 'in_progress') {
+        console.warn(`API: end-ride - Booking ${bookingId} status is ${booking.status}, expected 'in_progress'.`);
         return res.status(400).json({ message: `Booking status is ${booking.status}, expected 'in_progress'` });
     }
 
-    // 2. Update the booking status in your database to 'completed'
-    await kv.hset(`booking:${bookingId}`, { status: 'completed' });
-    console.log(`Booking ${bookingId} status updated to completed by ${driverId}`);
+    console.log(`API: end-ride - Found booking ${bookingId}. Current status: ${booking.status}. Updating to 'completed' and deleting.`);
+    await redis.hset(`booking:${bookingId}`, { status: 'completed' }); // Changed 'kv' to 'redis'
+    await redis.del(`booking:${bookingId}`); // Changed 'kv' to 'redis' - Delete booking after completion
+    console.log(`API: end-ride - Booking ${bookingId} status updated to completed and removed from Upstash Redis.`);
 
-    // --- Optional: Clean up or perform final actions ---
-    // In a real app:
-    // - Calculate final fare if not done yet
-    // - Process payment
-    // - You might want to delete the booking from active storage if it's truly done
-    await kv.del(`booking:${bookingId}`); // Remove booking from KV after completion
-    console.log(`Booking ${bookingId} removed from KV.`);
-
-    // 3. (Optional but recommended) Trigger a Pusher event to notify the Rider
-    // This assumes the Rider frontend subscribes to a channel like `rider-${booking.riderId}`
-    if (booking.riderId) { // Ensure riderId exists in your stored booking data
-        // Include final fare if you calculate it
+    if (booking.riderId) {
+        // You might want to calculate final fare here if not done before
         pusher.trigger(`rider-${booking.riderId}`, 'ride-completed', { bookingId, driverId, status: 'completed', finalFare: booking.fare });
+        console.log(`API: end-ride - Pusher event 'ride-completed' triggered for rider ${booking.riderId}.`);
     }
-    // You could also trigger a public event on 'booking-channel' if you need other services/drivers to know
-
-    // 4. Send a success response back to the frontend
+    
     res.status(200).json({ message: 'Ride completed', bookingId });
 
   } catch (error) {
-    console.error('Error in /api/end-ride:', error);
-    // Return a 500 status for internal server errors
+    console.error('API: end-ride - ERROR during processing:', error);
     res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 }
