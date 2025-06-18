@@ -1,8 +1,10 @@
 // api/request-booking.js
 
 import Pusher from 'pusher';
-import { createClient } from '@vercel/kv';
+// Import the Upstash Redis client instead of @vercel/kv
+import { Redis } from '@upstash/redis'; // <-- CHANGED
 
+// Configure Pusher (must be set as Vercel Environment Variables!)
 const pusher = new Pusher({
   appId: process.env.PUSHER_APP_ID,
   key: process.env.PUSHER_KEY,
@@ -11,9 +13,11 @@ const pusher = new Pusher({
   useTLS: true,
 });
 
-const kv = createClient({
-  url: process.env.KV_REST_API_URL,
-  token: process.env.KV_REST_API_TOKEN,
+// Configure Upstash Redis client (use Upstash-specific ENV variables)
+// These are typically UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN
+const redis = new Redis({ // <-- CHANGED from kv to redis
+  url: process.env.UPSTASH_REDIS_REST_URL, // <-- CHANGED ENV VAR NAME
+  token: process.env.UPSTASH_REDIS_REST_TOKEN, // <-- CHANGED ENV VAR NAME
 });
 
 export default async function handler(req, res) {
@@ -24,11 +28,11 @@ export default async function handler(req, res) {
   const bookingData = req.body;
   const bookingId = bookingData.bookingId; 
 
-  console.log('API: request-booking - Received request for bookingId:', bookingId); // Add this log
-  console.log('API: request-booking - Received bookingData:', JSON.stringify(bookingData)); // Add this log
+  console.log('API: request-booking - Received request for bookingId:', bookingId);
+  console.log('API: request-booking - Received bookingData:', JSON.stringify(bookingData));
 
   if (!bookingId || !bookingData.pickup || !bookingData.destination) {
-    console.error("API: request-booking - Missing essential booking data:", bookingData); // Update this log
+    console.error("API: request-booking - Missing essential booking data:", bookingData);
     return res.status(400).json({ message: 'Missing bookingId, pickup, or destination in request.' });
   }
 
@@ -39,9 +43,10 @@ export default async function handler(req, res) {
       createdAt: Date.now(),
     };
 
-    console.log(`API: request-booking - Attempting to save booking:${bookingId} to KV. Data:`, JSON.stringify(newBookingRecord)); // Add this log
-    await kv.hset(`booking:${bookingId}`, newBookingRecord);
-    console.log(`API: request-booking - Booking ${bookingId} SUCCESSFULLY SAVED to Vercel KV.`); // Add this log
+    console.log(`API: request-booking - Attempting to save booking:${bookingId} to Upstash Redis. Data:`, JSON.stringify(newBookingRecord));
+    // Use redis.hset for Upstash Redis. It works similarly to kv.hset
+    await redis.hset(`booking:${bookingId}`, newBookingRecord); // <-- CHANGED from kv.hset to redis.hset
+    console.log(`API: request-booking - Booking ${bookingId} SUCCESSFULLY SAVED to Upstash Redis.`);
 
     pusher.trigger('booking-channel', 'new-ride-request', newBookingRecord);
     console.log(`API: request-booking - Pusher event 'new-ride-request' triggered for booking ${bookingId}.`);
@@ -53,7 +58,8 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('API: request-booking - ERROR during processing:', error); // Update this log
+    console.error('API: request-booking - ERROR during processing:', error);
+    // Important: check error.message for more details, especially connection errors
     res.status(500).json({ message: 'Internal Server Error', error: error.message });
   }
 }
