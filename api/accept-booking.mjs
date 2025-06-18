@@ -1,41 +1,59 @@
-// In file: /api/accept-booking.mjs
+// api/accept-booking.js
 
 import Pusher from 'pusher';
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis'; // Updated import
 
-// Initialize Pusher using the secure environment variables from Vercel
 const pusher = new Pusher({
   appId: process.env.PUSHER_APP_ID,
   key: process.env.PUSHER_KEY,
   secret: process.env.PUSHER_SECRET,
   cluster: process.env.PUSHER_CLUSTER,
-  useTLS: true
+  useTLS: true,
 });
 
-export default async function handler(request, response) {
-  if (request.method !== 'POST') {
-    return response.status(405).end();
+const redis = new Redis({ // Changed 'kv' to 'redis'
+  url: process.env.UPSTASH_REDIS_REST_URL, // Updated ENV VAR NAME
+  token: process.env.UPSTASH_REDIS_REST_TOKEN, // Updated ENV VAR NAME
+});
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { bookingId, driverId } = request.body;
+  const { bookingId, driverId } = req.body;
 
-  // 1. Get the driver's details from the database
-  const driverData = await kv.hgetall(driverId);
+  if (!bookingId || !driverId) {
+    return res.status(400).json({ message: 'Missing bookingId or driverId' });
+  }
 
-  // 2. In a real app, you would associate the driver with the booking in your database.
-  // For now, we'll just log it.
-  console.log(`Driver ${driverId} accepted booking ${bookingId}`);
+  try {
+    console.log(`API: accept-booking - Driver ${driverId} attempting to accept booking ${bookingId}.`);
+    const booking = await redis.hgetall(`booking:${bookingId}`); // Changed 'kv' to 'redis'
 
-  // 3. Trigger the 'driver-assigned' event to notify the RIDER
-  // This tells the rider's app that their booking was successful.
-  await pusher.trigger(
-    'booking-channel',   // The public channel the rider is listening on
-    'driver-assigned',   // The event the rider's app is waiting for
-    {
-      ...driverData,
-      eta: "5 mins" // You would calculate this in a real app
+    if (!booking || Object.keys(booking).length === 0) {
+        console.error(`API: accept-booking - Booking ${bookingId} not found or empty.`);
+        return res.status(404).json({ message: 'Booking not found' });
     }
-  );
+    if (booking.status !== 'pending') {
+        console.warn(`API: accept-booking - Booking ${bookingId} status is ${booking.status}, expected 'pending'.`);
+        return res.status(400).json({ message: `Booking not in pending state, current: ${booking.status}` });
+    }
 
-  response.status(200).json({ success: true, message: "Booking accepted." });
+    // Update booking status and assign driver
+    await redis.hset(`booking:${bookingId}`, { status: 'accepted', driverId: driverId }); // Changed 'kv' to 'redis'
+    console.log(`API: accept-booking - Booking ${bookingId} accepted by ${driverId}.`);
+
+    // Optional: Notify rider via Pusher that a driver has been assigned
+    if (booking.riderId) {
+        pusher.trigger(`rider-${booking.riderId}`, 'driver-assigned', { bookingId, driverId, status: 'accepted' });
+        console.log(`API: accept-booking - Pusher event 'driver-assigned' triggered for rider ${booking.riderId}.`);
+    }
+
+    res.status(200).json({ message: 'Booking accepted', bookingId });
+
+  } catch (error) {
+    console.error('API: accept-booking - ERROR during processing:', error);
+    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+  }
 }
