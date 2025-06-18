@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* All CSS remains the same */
+        /* All existing CSS, with additions for the modal */
         :root { --primary-color: #dc2626; --secondary-color: #fbbf24; --success-color: #22c55e; --danger-color: #ef4444; --info-color: #3b82f6; --grey-light: #f3f4f6; --grey-dark: #4b5563; }
         body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; background-color: var(--grey-light); }
         #driver-dashboard { width: 380px; display: flex; flex-direction: column; padding: 20px; background: white; box-shadow: 0 0 15px rgba(0,0,0,0.1); z-index: 1000; }
@@ -21,14 +21,75 @@
         button:hover { opacity: 0.9; }
         #toggle-online-btn.online { background-color: var(--danger-color); }
         #toggle-online-btn.offline { background-color: var(--success-color); }
-        #ride-request-card { display: none; border-color: var(--info-color); box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); animation: pulse 2s infinite; }
+        /* Existing ride-request-card is now styled within the modal for consistency */
+        #ride-request-card { border-color: var(--info-color); box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); animation: pulse 2s infinite; }
         #ride-request-card .timer { font-size: 1.5em; font-weight: 700; text-align: center; color: var(--primary-color); margin: 10px 0; }
         .ride-actions { display: flex; gap: 10px; margin-top: 15px; }
         .ride-actions button { width: 100%; }
         #accept-btn { background-color: var(--success-color); }
         #reject-btn { background-color: var(--grey-dark); }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } }
-        @media (max-width: 768px) { body { flex-direction: column-reverse; } #driver-dashboard { width: 100%; height: 40%; overflow-y: auto; box-sizing: border-box; } }
+
+        /* NEW: Modal Styling for Ride Request Popup */
+        #ride-request-modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 2000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+            justify-content: center; /* Center content horizontally */
+            align-items: center; /* Center content vertically */
+            backdrop-filter: blur(5px); /* Optional: blur background */
+            animation: fadeIn 0.3s forwards;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto; /* Auto margin for centering */
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%; /* Responsive width */
+            max-width: 400px; /* Max width */
+            animation: slideIn 0.3s forwards;
+            position: relative; /* For animation */
+            display: flex; /* Ensure inner content is centered if needed */
+            flex-direction: column;
+        }
+        
+        /* Ensure the card within the modal looks good */
+        .modal-content #ride-request-card {
+            margin-top: 0; /* Remove top margin when inside modal */
+            border: none; /* Remove border when inside modal */
+            box-shadow: none; /* Remove outer shadow when inside modal */
+            animation: none; /* Remove pulse animation when inside modal */
+            padding: 0; /* Remove padding from card as modal content has it */
+            background: none; /* Remove background from card */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Responsive adjustments for modal */
+        @media (max-width: 768px) {
+            body { flex-direction: column-reverse; }
+            #driver-dashboard { width: 100%; height: 40%; overflow-y: auto; box-sizing: border-box; }
+            .modal-content {
+                width: 95%; /* Adjust width for smaller screens */
+                margin: 20px; /* Add some margin */
+            }
+        }
     </style>
 </head>
 <body>
@@ -41,13 +102,18 @@
             <p><strong>ID:</strong> <span id="driver-id-display"></span></p>
             <p><strong>State:</strong> <span id="online-status-display" style="font-weight:bold; color: var(--danger-color);">OFFLINE</span></p>
         </div>
-        <div id="ride-request-card" class="card">
-            <h2>New Ride Request!</h2>
-            <div id="ride-details"></div>
-            <div id="countdown-timer" class="timer">30</div>
-            <div class="ride-actions">
-                <button id="reject-btn"><i class="material-icons">close</i>Reject</button>
-                <button id="accept-btn"><i class="material-icons">check</i>Accept</button>
+        </div>
+
+    <div id="ride-request-modal">
+        <div class="modal-content">
+            <div id="ride-request-card">
+                <h2>New Ride Request!</h2>
+                <div id="ride-details"></div>
+                <div id="countdown-timer" class="timer">30</div>
+                <div class="ride-actions">
+                    <button id="reject-btn"><i class="material-icons">close</i>Reject</button>
+                    <button id="accept-btn"><i class="material-icons">check</i>Accept</button>
+                </div>
             </div>
         </div>
     </div>
@@ -56,7 +122,7 @@
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
         // --- CONFIGURATION ---
-        const PUSHER_KEY = "2145cc5c326a430b3ffa"; // <-- PASTE YOUR PUBLIC KEY HERE
+        const PUSHER_KEY = "YOUR_PUBLIC_PUSHER_KEY"; // <-- PASTE YOUR PUBLIC KEY HERE
         const PUSHER_CLUSTER = "ap1";
         const RIDE_REQUEST_TIMEOUT = 30;
         const LOCATION_BROADCAST_INTERVAL = 10000;
@@ -64,7 +130,8 @@
         // --- DOM ELEMENTS ---
         const toggleBtn = document.getElementById('toggle-online-btn');
         const statusCard = document.getElementById('status-card');
-        const rideRequestCard = document.getElementById('ride-request-card');
+        // const rideRequestCard = document.getElementById('ride-request-card'); // This will now be controlled via the modal
+        const rideRequestModal = document.getElementById('ride-request-modal'); // NEW Modal Element
         const countdownTimerEl = document.getElementById('countdown-timer');
         const driverIdDisplay = document.getElementById('driver-id-display');
         const onlineStatusDisplay = document.getElementById('online-status-display');
@@ -79,22 +146,22 @@
         let locationInterval = null;
         let rideRequestInterval = null;
         let myMarker = null;
-        let currentRideData = null; // To store accepted ride details
+        let currentRideData = null;
 
-        // --- AUDIO ---
-        const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3');
+        // --- AUDIO (NEW) ---
+        // Using a public domain sound URL for demonstration
+        const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-positive-notification-alert-2683.mp3'); 
+        notificationSound.volume = 0.7; // Adjust volume as needed
 
         // --- MAP INITIALIZATION ---
         const map = L.map('map').setView([12.8797, 121.7740], 6);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
 
         // =================================================================
-        // NEW DEBUGGING BLOCK (Unchanged)
+        // DEBUGGING BLOCK (Unchanged)
         // =================================================================
         try {
             console.log("--- Starting Pusher Connection ---");
-            
-            // 1. Log the key to check for typos or extra characters
             console.log("Using Pusher Key:", `'${PUSHER_KEY}'`);
             console.log("Using Cluster:", `'${PUSHER_CLUSTER}'`);
 
@@ -102,16 +169,13 @@
                 throw new Error("Pusher Key is not set. Please paste your public key from the Pusher dashboard.");
             }
 
-            // 2. Initialize Pusher
             const pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
             console.log("Pusher object initialized successfully.");
 
-            // 3. Subscribe to the channel
             const channelName = 'booking-channel';
             const channel = pusher.subscribe(channelName);
             console.log(`Subscribing to channel: '${channelName}'`);
 
-            // 4. Bind to the event
             channel.bind('new-ride-request', function(data) {
                 if (!isOnline) return;
                 console.log("Pusher event received:", data);
@@ -128,58 +192,30 @@
         
         // --- CORE FUNCTIONS ---
         function updateStatusOnServer(newStatus, location) {
-            fetch('/api/driver-status', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ driverId: DRIVER_ID, status: newStatus, location })
-            }).catch(error => console.error('Failed to update status on server:', error));
+            fetch('/api/driver-status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ driverId: DRIVER_ID, status: newStatus, location }) }).catch(error => console.error('Failed to update status on server:', error));
         }
-
         function startBroadcastingLocation() {
             if (locationInterval) clearInterval(locationInterval);
-            const broadcast = () => {
-                navigator.geolocation.getCurrentPosition(position => {
-                    const location = { lat: position.coords.latitude, lon: position.coords.longitude };
-                    updateStatusOnServer('online', location);
-                    const latLng = [location.lat, location.lon];
-                    if (myMarker) {
-                        myMarker.setLatLng(latLng);
-                    } else {
-                        const driverIcon = L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448633.png", iconSize: [40, 40], iconAnchor: [20, 40] });
-                        myMarker = L.marker(latLng, { icon: driverIcon }).addTo(map);
-                    }
-                    map.panTo(latLng);
-                }, (error) => console.error("Geolocation error:", error), { enableHighAccuracy: true });
-            };
-            broadcast();
-            locationInterval = setInterval(broadcast, LOCATION_BROADCAST_INTERVAL);
+            const broadcast = () => { navigator.geolocation.getCurrentPosition(position => { const location = { lat: position.coords.latitude, lon: position.coords.longitude }; updateStatusOnServer('online', location); const latLng = [location.lat, location.lon]; if (myMarker) { myMarker.setLatLng(latLng); } else { const driverIcon = L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/3448/3448633.png", iconSize: [40, 40], iconAnchor: [20, 40] }); myMarker = L.marker(latLng, { icon: driverIcon }).addTo(map); } map.panTo(latLng); }, (error) => console.error("Geolocation error:", error), { enableHighAccuracy: true }); }; broadcast(); locationInterval = setInterval(broadcast, LOCATION_BROADCAST_INTERVAL);
         }
-
         function stopBroadcastingLocation() {
-            if (locationInterval) clearInterval(locationInterval);
-            locationInterval = null;
-            updateStatusOnServer('offline', null);
-            if (myMarker) {
-                map.removeLayer(myMarker);
-                myMarker = null;
-            }
+            if (locationInterval) clearInterval(locationInterval); locationInterval = null; updateStatusOnServer('offline', null); if (myMarker) { map.removeLayer(myMarker); myMarker = null; }
         }
 
+        // MODIFIED: showRideRequest to display modal and play sound
         function showRideRequest(bookingData) {
-            notificationSound.play();
-            currentRideData = bookingData; // Store bookingData for later use
+            notificationSound.play(); // Play sound
             rideDetailsEl.innerHTML = `
                 <p><strong>From:</strong> ${bookingData.pickup.address}</p>
                 <p><strong>To:</strong> ${bookingData.destination.address}</p>
                 <p><strong>Distance:</strong> ${bookingData.distance} km</p>
                 <p><strong>Fare:</strong> PHP ${bookingData.fare}</p>
             `;
-            rideRequestCard.style.display = 'block';
-
+            rideRequestModal.style.display = 'flex'; // Show the modal
+            
             let countdown = RIDE_REQUEST_TIMEOUT;
             countdownTimerEl.textContent = countdown;
 
-            // Pass the entire bookingData object to acceptRide
             acceptBtn.onclick = () => acceptRide(bookingData);
             rejectBtn.onclick = () => rejectRide();
 
@@ -192,35 +228,28 @@
             }, 1000);
         }
 
+        // MODIFIED: hideRideRequest to hide the modal and stop sound
         function hideRideRequest() {
             if (rideRequestInterval) clearInterval(rideRequestInterval);
             rideRequestInterval = null;
-            rideRequestCard.style.display = 'none';
-            currentRideData = null; // Clear current ride data
+            rideRequestModal.style.display = 'none'; // Hide the modal
+            notificationSound.pause(); // Pause sound
+            notificationSound.currentTime = 0; // Rewind sound
+            currentRideData = null;
         }
 
-        // --- NEW / MODIFIED FUNCTIONS ---
-
-        let pickupMarker = null; // To store the pickup location marker
-        let destinationMarker = null; // To store the destination location marker
+        let pickupMarker = null;
+        let destinationMarker = null;
 
         async function acceptRide(bookingData) {
-            hideRideRequest(); // This also clears currentRideData
-            currentRideData = bookingData; // Re-store accepted ride data
+            hideRideRequest();
+            currentRideData = bookingData;
             statusCard.innerHTML = `<p>Accepting ride ${bookingData.bookingId}...</p>`;
 
             try {
-                const response = await fetch('/api/accept-booking', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookingId: bookingData.bookingId, driverId: DRIVER_ID })
-                });
+                const response = await fetch('/api/accept-booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId: bookingData.bookingId, driverId: DRIVER_ID }) });
+                if (!response.ok) throw new Error("Failed to accept booking.");
 
-                if (!response.ok) {
-                    throw new Error("Failed to accept booking.");
-                }
-
-                // --- SUCCESSFUL ACCEPTANCE: Update UI for Navigation ---
                 statusCard.innerHTML = `
                     <h2>Current Ride</h2>
                     <p><strong>Status:</strong> Navigating to Pickup</p>
@@ -231,52 +260,26 @@
                     </button>
                 `;
 
-                // Display Pickup Marker on Map
                 if (bookingData.pickup && bookingData.pickup.lat && bookingData.pickup.lon) {
                     const pickupLatLng = [bookingData.pickup.lat, bookingData.pickup.lon];
-                    if (pickupMarker) map.removeLayer(pickupMarker); // Remove old pickup marker if any
-                    if (destinationMarker) map.removeLayer(destinationMarker); // Remove old destination marker if any
-                    pickupMarker = L.marker(pickupLatLng, {
-                        icon: L.icon({
-                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-                        })
-                    }).addTo(map).bindPopup(`<b>Pickup:</b> ${bookingData.pickup.address}`).openPopup();
-                    map.flyTo(pickupLatLng, 15); // Center map on pickup
+                    if (pickupMarker) map.removeLayer(pickupMarker);
+                    if (destinationMarker) map.removeLayer(destinationMarker);
+                    pickupMarker = L.marker(pickupLatLng, { icon: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }) }).addTo(map).bindPopup(`<b>Pickup:</b> ${bookingData.pickup.address}`).openPopup();
+                    map.flyTo(pickupLatLng, 15);
                 }
-
-                // Add event listener for "Arrived at Pickup" button
                 document.getElementById('arrived-btn').addEventListener('click', handleArrivedAtPickup);
-
             } catch (error) {
                 console.error("Accept ride error:", error);
                 statusCard.innerHTML = `<p style="color:red">Error accepting ride.</p>`;
             }
         }
 
-        // New function for handling arrival at pickup
         async function handleArrivedAtPickup() {
-            if (!currentRideData) {
-                console.error("No current ride data to mark as arrived.");
-                return;
-            }
-
+            if (!currentRideData) { console.error("No current ride data to mark as arrived."); return; }
             statusCard.innerHTML = `<p>Notifying backend of arrival...</p>`;
-
             try {
-                // Optional: Send update to backend that driver has arrived
-                const response = await fetch('/api/driver-arrived', { // You'll need to create this endpoint
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookingId: currentRideData.bookingId, driverId: DRIVER_ID })
-                });
-
-                if (!response.ok) {
-                    throw new Error("Failed to notify arrival to backend.");
-                }
-
-                // Update UI for waiting at pickup
+                const response = await fetch('/api/driver-arrived', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId: currentRideData.bookingId, driverId: DRIVER_ID }) });
+                if (!response.ok) throw new Error("Failed to notify arrival to backend.");
                 statusCard.innerHTML = `
                     <h2>Current Ride</h2>
                     <p><strong>Status:</strong> Arrived at Pickup. Waiting for rider...</p>
@@ -286,44 +289,20 @@
                         <i class="material-icons">play_arrow</i> Start Ride
                     </button>
                 `;
-
-                // Remove pickup marker
-                if (pickupMarker) {
-                    map.removeLayer(pickupMarker);
-                    pickupMarker = null;
-                }
-
-                // Add event listener for "Start Ride" button
+                if (pickupMarker) { map.removeLayer(pickupMarker); pickupMarker = null; }
                 document.getElementById('start-ride-btn').addEventListener('click', handleStartRide);
-
             } catch (error) {
                 console.error("Error marking arrival:", error);
                 statusCard.innerHTML = `<p style="color:red">Error marking arrival.</p>`;
             }
         }
 
-        // New function for handling starting the ride
         async function handleStartRide() {
-            if (!currentRideData) {
-                console.error("No current ride data to start.");
-                return;
-            }
-
+            if (!currentRideData) { console.error("No current ride data to start."); return; }
             statusCard.innerHTML = `<p>Starting ride...</p>`;
-
             try {
-                // Optional: Send update to backend that ride has started
-                const response = await fetch('/api/start-ride', { // You'll need to create this endpoint
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookingId: currentRideData.bookingId, driverId: DRIVER_ID })
-                });
-
-                if (!response.ok) {
-                    throw new Error("Failed to notify ride start to backend.");
-                }
-
-                // Update UI for active ride
+                const response = await fetch('/api/start-ride', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId: currentRideData.bookingId, driverId: DRIVER_ID }) });
+                if (!response.ok) throw new Error("Failed to notify ride start to backend.");
                 statusCard.innerHTML = `
                     <h2>Current Ride</h2>
                     <p><strong>Status:</strong> Ride in Progress!</p>
@@ -332,85 +311,45 @@
                         <i class="material-icons">flag</i> End Ride
                     </button>
                 `;
-
-                // Add destination marker and pan map
                 if (currentRideData.destination && currentRideData.destination.lat && currentRideData.destination.lon) {
                     const destinationLatLng = [currentRideData.destination.lat, currentRideData.destination.lon];
-                    if (destinationMarker) map.removeLayer(destinationMarker); // Remove old destination marker if any
-                    destinationMarker = L.marker(destinationLatLng, {
-                        icon: L.icon({
-                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png', // Blue marker for destination
-                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-                        })
-                    }).addTo(map).bindPopup(`<b>Destination:</b> ${currentRideData.destination.address}`).openPopup();
-                    map.flyTo(destinationLatLng, 15); // Optionally center map on destination
+                    if (destinationMarker) map.removeLayer(destinationMarker);
+                    destinationMarker = L.marker(destinationLatLng, { icon: L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }) }).addTo(map).bindPopup(`<b>Destination:</b> ${currentRideData.destination.address}`).openPopup();
+                    map.flyTo(destinationLatLng, 15);
                 }
-
                 document.getElementById('end-ride-btn').addEventListener('click', handleEndRide);
-
             } catch (error) {
                 console.error("Error starting ride:", error);
                 statusCard.innerHTML = `<p style="color:red">Error starting ride.</p>`;
             }
         }
 
-        // New function for ending the ride
         async function handleEndRide() {
-            if (!currentRideData) {
-                console.error("No current ride data to end.");
-                return;
-            }
-
+            if (!currentRideData) { console.error("No current ride data to end."); return; }
             statusCard.innerHTML = `<p>Ending ride...</p>`;
-
             try {
-                // Optional: Send update to backend that ride has ended
-                const response = await fetch('/api/end-ride', { // You'll need to create this endpoint
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookingId: currentRideData.bookingId, driverId: DRIVER_ID })
-                });
-
-                if (!response.ok) {
-                    throw new Error("Failed to notify ride end to backend.");
-                }
-
-                // Clear UI for ride and reset
+                const response = await fetch('/api/end-ride', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId: currentRideData.bookingId, driverId: DRIVER_ID }) });
+                if (!response.ok) throw new Error("Failed to notify ride end to backend.");
                 statusCard.innerHTML = `
                     <h2>Your Status</h2>
                     <p><strong>ID:</strong> <span id="driver-id-display">${DRIVER_ID}</span></p>
                     <p><strong>State:</strong> <span id="online-status-display" style="font-weight:bold; color: var(--success-color);">ONLINE</span></p>
                     <p>Ride completed! Ready for next.</p>
                 `;
-                // Reset state for next ride
                 currentRideData = null;
-                
-                // Remove all temporary markers (pickup/destination) from map
-                if (pickupMarker) {
-                    map.removeLayer(pickupMarker);
-                    pickupMarker = null;
-                }
-                if (destinationMarker) {
-                    map.removeLayer(destinationMarker);
-                    destinationMarker = null;
-                }
-                
-                // Ensure the online status display is correctly set for next ride
+                if (pickupMarker) { map.removeLayer(pickupMarker); pickupMarker = null; }
+                if (destinationMarker) { map.removeLayer(destinationMarker); destinationMarker = null; }
                 onlineStatusDisplay.textContent = "ONLINE";
                 onlineStatusDisplay.style.color = 'var(--success-color)';
-
             } catch (error) {
                 console.error("Error ending ride:", error);
                 statusCard.innerHTML = `<p style="color:red">Error ending ride.</p>`;
             }
         }
 
-
         function rejectRide() {
             hideRideRequest();
             console.log("Ride rejected.");
-            // Optional: Notify backend of rejection
         }
 
         toggleBtn.addEventListener('click', () => {
@@ -426,24 +365,16 @@
                 onlineStatusDisplay.textContent = "OFFLINE";
                 onlineStatusDisplay.style.color = 'var(--danger-color)';
                 stopBroadcastingLocation();
-                // Clear any active ride related UI/markers when going offline
                 statusCard.innerHTML = `
                     <h2>Your Status</h2>
                     <p><strong>ID:</strong> <span id="driver-id-display">${DRIVER_ID}</span></p>
                     <p><strong>State:</strong> <span id="online-status-display" style="font-weight:bold; color: var(--danger-color);">OFFLINE</span></p>
                 `;
-                if (currentRideData) { // If there was an active ride, reset it
+                if (currentRideData) {
                     currentRideData = null;
                 }
-                // Also remove any remaining ride-specific markers if going offline
-                if (pickupMarker) {
-                    map.removeLayer(pickupMarker);
-                    pickupMarker = null;
-                }
-                if (destinationMarker) {
-                    map.removeLayer(destinationMarker);
-                    destinationMarker = null;
-                }
+                if (pickupMarker) { map.removeLayer(pickupMarker); pickupMarker = null; }
+                if (destinationMarker) { map.removeLayer(destinationMarker); destinationMarker = null; }
             }
         });
     </script>
