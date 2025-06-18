@@ -122,7 +122,7 @@
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
         // --- CONFIGURATION ---
-        const PUSHER_KEY = "2145cc5c326a430b3ffa"; // <-- PASTE YOUR PUBLIC KEY HERE
+        const PUSHER_KEY = "YOUR_PUBLIC_PUSHER_KEY"; // <-- PASTE YOUR PUBLIC KEY HERE
         const PUSHER_CLUSTER = "ap1";
         const RIDE_REQUEST_TIMEOUT = 30;
         const LOCATION_BROADCAST_INTERVAL = 10000;
@@ -130,8 +130,7 @@
         // --- DOM ELEMENTS ---
         const toggleBtn = document.getElementById('toggle-online-btn');
         const statusCard = document.getElementById('status-card');
-        // const rideRequestCard = document.getElementById('ride-request-card'); // This will now be controlled via the modal
-        const rideRequestModal = document.getElementById('ride-request-modal'); // NEW Modal Element
+        const rideRequestModal = document.getElementById('ride-request-modal');
         const countdownTimerEl = document.getElementById('countdown-timer');
         const driverIdDisplay = document.getElementById('driver-id-display');
         const onlineStatusDisplay = document.getElementById('online-status-display');
@@ -148,10 +147,9 @@
         let myMarker = null;
         let currentRideData = null;
 
-        // --- AUDIO (NEW) ---
-        // Using a public domain sound URL for demonstration
+        // --- AUDIO ---
         const notificationSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-positive-notification-alert-2683.mp3'); 
-        notificationSound.volume = 0.7; // Adjust volume as needed
+        notificationSound.volume = 0.7;
 
         // --- MAP INITIALIZATION ---
         const map = L.map('map').setView([12.8797, 121.7740], 6);
@@ -341,6 +339,10 @@
                 if (destinationMarker) { map.removeLayer(destinationMarker); destinationMarker = null; }
                 onlineStatusDisplay.textContent = "ONLINE";
                 onlineStatusDisplay.style.color = 'var(--success-color)';
+
+                // --- FIX: Restart location broadcasting to become available ---
+                startBroadcastingLocation(); // <--- ADDED THIS LINE
+
             } catch (error) {
                 console.error("Error ending ride:", error);
                 statusCard.innerHTML = `<p style="color:red">Error ending ride.</p>`;
