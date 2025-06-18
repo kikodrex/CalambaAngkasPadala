@@ -1,161 +1,250 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>PH Angkas Padala</title>
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-<link rel="stylesheet" href="./libs/leaflet.css" />
-<style>
-  /* All CSS is included here */
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body, #app { height: 100%; font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #facc15, #dc2626); color: #1e293b; }
-  body { display: flex; flex-direction: column; min-height: 100vh; }
-  header { background: linear-gradient(135deg, #dc2626, #fbbf24); color: white; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 1.5rem; position: sticky; top: 0; z-index: 10000; box-shadow: 0 4px 12px rgb(220 38 38 / 0.4); }
-  header .logo { display: flex; align-items: center; gap: 8px; }
-  header .logo i.material-icons { font-size: 2rem; }
-  #app { flex-grow: 1; display: flex; flex-direction: column; margin-bottom: 24px; }
-  main { flex-grow: 1; display: flex; flex-direction: column; gap: 16px; padding: 16px; }
-  @media(min-width: 768px) { main { flex-direction: row; padding: 24px 48px; } }
-  #map { flex-grow: 1; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.15); min-height: 320px; touch-action: none; }
-  #booking-panel { background: rgba(255 255 255 / 0.95); border-radius: 16px; padding: 24px; max-width: 400px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 20px; }
-  #booking-panel h2 { font-weight: 700; font-size: 1.5rem; color: #dc2626; margin-bottom: 8px; }
-  #booking-form { display: flex; flex-direction: column; gap: 20px; }
-  .input-wrapper { position: relative; width: 100%; }
-  label { font-weight: 600; margin-bottom: 6px; display: block; color: #334155; }
-  input { padding: 12px 16px; border-radius: 12px; border: 1px solid #cbd5e1; font-size: 1rem; transition: border-color 0.3s ease; width: 100%; }
-  input:focus { outline: none; border-color: #fbbf24; box-shadow: 0 0 8px rgba(251, 191, 36, 0.5); }
-  .pickup-container { display: flex; gap: 8px; align-items: center; }
-  button { background: #fbbf24; color: #dc2626; border: none; font-weight: 700; cursor: pointer; box-shadow: 0 6px 15px rgba(251,191,36,0.6); transition: background 0.3s ease, color 0.3s ease; border-radius: 12px; padding: 12px 16px; font-size: 1rem; user-select: none; }
-  button:hover:not(:disabled) { background: #dc2626; color: white; }
-  button:disabled { background: #fcd34d; cursor: not-allowed; box-shadow: none; color: #a16207; }
-  #book-btn { width: 100%; margin-top: 8px; }
-  #use-location-btn { min-width: 44px; padding: 0 12px; background: #dc2626; color: white; display: flex; align-items: center; justify-content: center; border-radius: 12px; }
-  #use-location-btn:disabled { background: #f87171; cursor: not-allowed; }
-  #use-location-btn i.material-icons { font-size: 24px; }
-  #status { font-size: 1rem; color: #334155; font-weight: 600; min-height: 24px; min-width: 100%; word-break: break-word; white-space: pre-wrap; }
-  .leaflet-container { background: #f0f0f0; } 
-  .autocomplete-items { position: absolute; border: 1px solid #cbd5e1; z-index: 9999; max-height: 180px; overflow-y: auto; border-radius: 8px; box-shadow: 0 3px 12px rgba(0,0,0,0.15); background-color: #fff; top: calc(100% + 4px); left: 0; right: auto; width: 100%; margin-top: 0; }
-  .autocomplete-items div { padding: 8px 12px; cursor: pointer; font-size: 0.95rem; color: #334155; border-bottom: 1px solid #f1f5f9; }
-  .autocomplete-items div:last-child { border-bottom: none; }
-  .autocomplete-items div:hover, .autocomplete-items .autocomplete-active { background-color: #dc2626; color: #fff; }
-  #booking-confirmation-modal > div { animation: fadeInScale 0.3s ease-out; }
-  @keyframes fadeInScale { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-  #modal-cancel-btn:hover { background: #b91c1c !important; }
-  footer { text-align: center; padding: 12px 24px; font-size: 0.9rem; color: #b91c1c; }
-</style>
+    <title>Ride Booking App</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./libs/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { --primary-color: #3b82f6; --secondary-color: #fbbf24; --success-color: #22c55e; --danger-color: #ef4444; --info-color: #3b82f6; --grey-light: #f3f4f6; --grey-dark: #4b5563; }
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; background-color: var(--grey-light); }
+        #booking-panel { width: 380px; display: flex; flex-direction: column; padding: 20px; background: white; box-shadow: 0 0 15px rgba(0,0,0,0.1); z-index: 1000; }
+        #map { flex-grow: 1; z-index: 500; }
+        h1 { display: flex; align-items: center; gap: 10px; margin: 0 0 20px 0; font-size: 1.8em; color: var(--primary-color); }
+        .card { border: 1px solid #e5e7eb; margin-top: 20px; padding: 15px; border-radius: 8px; background: #fafafa; }
+        .card h2 { margin: 0 0 10px 0; font-size: 1.1em; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: var(--grey-dark); }
+        .form-group input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+        button { font-size: 1.2rem; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; color: white; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 500; background-color: var(--primary-color); }
+        button:hover { opacity: 0.9; }
+        #status-message { margin-top: 20px; padding: 10px; border-radius: 8px; text-align: center; font-weight: 500; display: none; }
+        #status-message.success { background-color: #d1fae5; color: var(--success-color); }
+        #status-message.error { background-color: #fee2e2; color: var(--danger-color); }
+        #status-message.info { background-color: #dbeafe; color: var(--info-color); } /* Added info styling */
+
+        @media (max-width: 768px) { body { flex-direction: column; } #booking-panel { width: 100%; height: 40%; overflow-y: auto; box-sizing: border-box; } }
+    </style>
 </head>
 <body>
-<header>
-  <div class="logo"><i class="material-icons" aria-hidden="true">motorcycle</i> PH Angkas Padala</div>
-</header>
-<div id="app">
-  <main>
-    <section id="map" aria-label="Map showing available drivers and routes" tabindex="0"></section>
-    <section id="booking-panel" aria-label="Booking panel">
-      <h2>Book a Ride</h2>
-      <form id="booking-form" aria-describedby="status" novalidate autocomplete="off">
-        <div class="input-wrapper">
-          <label for="pickup">Pick-up Location</label>
-          <div class="pickup-container">
-            <input type="text" id="pickup" name="pickup" placeholder="Enter pick-up address" autocomplete="off" aria-label="Pick-up location" />
-            <button type="button" id="use-location-btn" aria-label="Use Current Location" title="Use Current Location"><i class="material-icons" aria-hidden="true">my_location</i></button>
-          </div>
+    <div id="map"></div>
+    <div id="booking-panel">
+        <h1><i class="material-icons">directions_car</i>Book a Ride</h1>
+
+        <div class="form-group">
+            <label for="pickup-address">Pickup Location:</label>
+            <input type="text" id="pickup-address" placeholder="Enter pickup address">
         </div>
-        <div class="input-wrapper">
-          <label for="destination">Destination</label>
-          <input type="text" id="destination" name="destination" placeholder="Enter destination address" autocomplete="off" aria-label="Destination location" />
+        <div class="form-group">
+            <label for="destination-address">Destination:</label>
+            <input type="text" id="destination-address" placeholder="Enter destination address">
         </div>
-        <button type="submit" id="book-btn" disabled>Book Now</button>
-      </form>
-      <div id="status" aria-live="polite" role="region" aria-atomic="true"></div>
-    </section>
-  </main>
-</div>
-<div id="booking-confirmation-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:100000; display:none; justify-content:center; align-items:center;">
-    <div style="background:white; padding:30px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.3); max-width:450px; width:90%; text-align:center; position:relative;">
-        <h3 style="color:#dc2626; margin-bottom:20px; font-size:1.6rem;">Confirm Your Ride</h3>
-        <p style="margin-bottom:10px; font-weight:600; color:#334155;">From: <span id="modal-pickup-address" style="font-weight:normal;"></span></p>
-        <p style="margin-bottom:20px; font-weight:600; color:#334155;">To: <span id="modal-destination-address" style="font-weight:normal;"></span></p>
-        <p style="font-size:1.8rem; font-weight:700; color:#fbbf24; margin-bottom:30px;">Estimated Fare: <span id="modal-fare">₱0.00</span></p>
-        <div style="display:flex; justify-content:space-around; gap:15px;">
-          <button id="modal-confirm-btn" style="flex:1; background:#dc2626; color:white; padding:12px 20px;">Confirm & Book</button>
-          <button id="modal-cancel-btn" style="flex:1; background:#ef4444; color:white; padding:12px 20px;">Cancel</button>
+
+        <button id="request-ride-btn"><i class="material-icons">send</i>Request Ride</button>
+
+        <div id="status-message"></div>
+
+        <div id="location-status" class="card">
+            <h2>Your Location</h2>
+            <p><strong>Latitude:</strong> <span id="current-lat">N/A</span></p>
+            <p><strong>Longitude:</strong> <span id="current-lon">N/A</span></p>
+            <p id="location-error" style="color: var(--danger-color);"></p>
         </div>
-        <button id="modal-close-btn" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:1.5rem; color:#6b7280; cursor:pointer;" aria-label="Close modal">&times;</button>
     </div>
-</div>
-<footer>© 2025 PH Angkas Padala - Demo Only</footer>
 
-<script src="./libs/leaflet.js"></script>
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script src="./libs/leaflet.js"></script>
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script>
+        // --- CONFIGURATION ---
+        const PUSHER_KEY = "YOUR_PUBLIC_PUSHER_KEY"; // <-- PASTE YOUR PUBLIC KEY HERE (Same as Driver's)
+        const PUSHER_CLUSTER = "ap1";
 
-<script>
-  (function(){
-    "use strict";
-    // --- CONFIGURATION ---
-    const API_BASE_URL = "/api";
+        // --- DOM ELEMENTS ---
+        const requestRideBtn = document.getElementById('request-ride-btn');
+        const pickupAddressInput = document.getElementById('pickup-address');
+        const destinationAddressInput = document.getElementById('destination-address');
+        const statusMessageEl = document.getElementById('status-message');
+        const currentLatEl = document.getElementById('current-lat');
+        const currentLonEl = document.getElementById('current-lon');
+        const locationErrorEl = document.getElementById('location-error');
 
-    // --- PUSHER PUBLIC KEYS ---
-    // Please PASTE your PUBLIC key here. Your cluster is 'ap1'.
-    const PUSHER_KEY = "2145cc5c326a430b3ffa"; // <-- PASTE YOUR PUBLIC KEY HERE
-    const PUSHER_CLUSTER = "ap1";
+        // --- APP STATE ---
+        let userMarker = null;
+        let userLocation = null; // { lat, lon }
 
-    const BASE_FARE = 60.00, SUCCEEDING_KM_RATE = 10.00, PER_MINUTE_RATE = 2.00, MINIMUM_FARE = 60.00, INITIAL_KM_COVERED = 2.0;
-    const map = L.map("map", { center: [12.8797, 121.7740], zoom: 6, zoomControl: true });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap contributors &copy; CARTO', maxZoom: 20 }).addTo(map);
-    const statusEl = document.getElementById("status");
-    let assignedDriverMarker = null;
+        // --- MAP INITIALIZATION ---
+        const map = L.map('map').setView([12.8797, 121.7740], 6); // Default view for Philippines
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO' }).addTo(map);
 
-    // --- PUSHER REAL-TIME SETUP ---
-    if (!PUSHER_KEY || PUSHER_KEY === "YOUR_PUBLIC_PUSHER_KEY") {
-        statusEl.innerHTML = '<strong style="color: red;">ERROR: Pusher Key is not set in index.html.</strong>';
-    } else {
-        const pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
-        const channel = pusher.subscribe('booking-channel');
-        channel.bind('driver-assigned', function(data) {
-            console.log("Pusher event received: driver-assigned", data);
-            statusEl.innerHTML = `
-                <div style="text-align: left; background: #e0f2fe; padding: 10px; border-radius: 8px;">
-                  <strong style="color: #0c4a6e;">Driver Found!</strong><br>
-                  Name: ${data.name}<br>
-                  Vehicle: ${data.vehicle}<br>
-                  ETA: ${data.eta}
-                </div>
-            `;
-            const driverLatLng = [data.lat, data.lon];
-            const driverIcon = L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png", iconSize: [40, 40], iconAnchor: [20, 40] });
-            if (assignedDriverMarker) {
-              assignedDriverMarker.setLatLng(driverLatLng);
+        // --- GEOLOCATION ---
+        function getUserLocation() {
+            if (navigator.geolocation) {
+                locationErrorEl.textContent = "Attempting to get your location..."; // Indicate loading
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLocation = {
+                            lat: position.coords.latitude,
+                            lon: position.coords.longitude
+                        };
+                        currentLatEl.textContent = userLocation.lat.toFixed(5);
+                        currentLonEl.textContent = userLocation.lon.toFixed(5);
+                        map.setView([userLocation.lat, userLocation.lon], 15); // Zoom to user's location
+
+                        if (userMarker) {
+                            userMarker.setLatLng([userLocation.lat, userLocation.lon]);
+                        } else {
+                            userMarker = L.marker([userLocation.lat, userLocation.lon], {
+                                icon: L.icon({
+                                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+                                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                    iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+                                })
+                            }).addTo(map).bindPopup("You are here!").openPopup();
+                        }
+                        locationErrorEl.textContent = ""; // Clear any previous error
+                        // Automatically fill pickup address if desired or just display location
+                        pickupAddressInput.value = "Current Location"; // Placeholder or actual reverse geocoded address
+                    },
+                    (error) => {
+                        console.error("Geolocation error:", error);
+                        let errorMessage = "Unable to retrieve your location.";
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage += " Please allow location access for this page.";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage += " Location information is unavailable.";
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage += " The request to get user location timed out.";
+                                break;
+                            default:
+                                errorMessage += ` Error code: ${error.code}`;
+                        }
+                        locationErrorEl.textContent = errorMessage;
+                        map.setView([12.8797, 121.7740], 6); // Fallback to default view
+                        userLocation = null; // Ensure userLocation is null on error
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
             } else {
-              assignedDriverMarker = L.marker(driverLatLng, { icon: driverIcon }).addTo(map);
+                locationErrorEl.textContent = "Geolocation is not supported by your browser.";
+                map.setView([12.8797, 121.7740], 6); // Fallback to default view
+                userLocation = null; // Ensure userLocation is null if not supported
             }
-            assignedDriverMarker.bindPopup(`Your driver: ${data.name}`).openPopup();
-            map.setView(driverLatLng, 16);
+        }
+        getUserLocation(); // Get location on page load
+
+        // --- RIDE REQUEST FUNCTION ---
+        requestRideBtn.addEventListener('click', async () => {
+            const pickupAddress = pickupAddressInput.value.trim();
+            const destinationAddress = destinationAddressInput.value.trim();
+
+            // --- Robust Input Validation ---
+            if (!pickupAddress) {
+                displayStatusMessage("Please enter a pickup address.", "error");
+                return;
+            }
+            if (!destinationAddress) {
+                displayStatusMessage("Please enter a destination address.", "error");
+                return;
+            }
+            if (!userLocation || !userLocation.lat || !userLocation.lon) {
+                displayStatusMessage("Your current location is not available. Please allow location access and ensure it loads.", "error");
+                // Attempt to get location again if it failed
+                getUserLocation();
+                return;
+            }
+
+            // In a real app, you'd geocode these addresses to get lat/lon if they're not 'Current Location'
+            // For now, we'll use userLocation for pickup and dummy for destination
+            const rideRequestData = {
+                bookingId: `booking_${Date.now()}_${Math.floor(Math.random() * 90000) + 10000}`, // More unique ID
+                pickup: {
+                    address: pickupAddress,
+                    lat: userLocation.lat,
+                    lon: userLocation.lon
+                },
+                destination: {
+                    address: destinationAddress,
+                    // These would ideally come from geocoding the destination address
+                    // Using dummy coordinates for now, relative to user's location for variety
+                    lat: userLocation.lat + (Math.random() - 0.5) * 0.2,
+                    lon: userLocation.lon + (Math.random() - 0.5) * 0.2
+                },
+                riderId: `rider_${Math.floor(1000 + Math.random() * 9000)}`, // Dummy rider ID
+                distance: (Math.random() * 20 + 5).toFixed(1), // Dummy distance between 5-25km
+                fare: (Math.random() * 200 + 100).toFixed(2) // Dummy fare between 100-300 PHP
+            };
+
+            // --- DEBUGGING LOGS ---
+            console.log("Frontend: Sending ride request with bookingId:", rideRequestData.bookingId);
+            console.log("Frontend: Full rideRequestData being sent:", JSON.stringify(rideRequestData));
+            // --- END DEBUGGING LOGS ---
+
+            displayStatusMessage("Requesting ride...", "info");
+            requestRideBtn.disabled = true; // Disable button to prevent multiple requests
+
+            try {
+                const response = await fetch('/api/request-booking', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(rideRequestData)
+                });
+
+                const result = await response.json(); // Attempt to parse JSON response
+
+                if (response.ok) {
+                    displayStatusMessage(`Ride requested! Booking ID: ${result.bookingId || rideRequestData.bookingId}. Looking for drivers...`, "success");
+                    // In a real app, you'd now listen to a Pusher channel specific to this booking ID
+                    // pusher.subscribe(`booking-${result.bookingId}`).bind('driver-assigned', handleDriverAssigned);
+                } else {
+                    // Log the error from the backend response if available
+                    console.error("Backend Error Response:", result);
+                    throw new Error(result.message || 'Failed to request ride.');
+                }
+            } catch (error) {
+                console.error("Ride request error:", error);
+                displayStatusMessage(`Error requesting ride: ${error.message || error}`, "error");
+            } finally {
+                requestRideBtn.disabled = false;
+            }
         });
-    }
 
-    // [ The rest of your JavaScript functions (initBookingFeatures, fetchAvailableDrivers, handleConfirmBooking, etc.) go here ]
-    const pickupInput = document.getElementById("pickup"), destinationInput = document.getElementById("destination"), bookBtn = document.getElementById("book-btn"), bookingForm = document.getElementById("booking-form"), useLocationBtn = document.getElementById("use-location-btn"), modal = document.getElementById("booking-confirmation-modal"), modalPickupAddress = document.getElementById("modal-pickup-address"), modalDestinationAddress = document.getElementById("modal-destination-address"), modalFare = document.getElementById("modal-fare"), modalConfirmBtn = document.getElementById("modal-confirm-btn"), modalCancelBtn = document.getElementById("modal-cancel-btn"), modalCloseBtn = document.getElementById("modal-close-btn");
-    let pickupLatLng = null, destinationLatLng = null, routeLayer = null, userMarkers = [], driverMarkers = {}, estimatedFareGlobal = 0;
-    const pickupIcon = L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png", iconSize: [36, 36], iconAnchor: [18, 36] });
-    const destinationIcon = L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/854/854878.png", iconSize: [36, 36], iconAnchor: [18, 36] });
-    function initBookingFeatures() { useLocationBtn.addEventListener('click', handleUseLocation); bookingForm.addEventListener("submit", handleFormSubmit); modalConfirmBtn.addEventListener("click", handleConfirmBooking); modalCancelBtn.addEventListener("click", () => { modal.style.display = "none"; bookBtn.disabled = false; }); modalCloseBtn.addEventListener("click", () => { modal.style.display = "none"; bookBtn.disabled = false; }); setAutocomplete(pickupInput); setAutocomplete(destinationInput); }
-    async function fetchAvailableDrivers() { try { const response = await fetch(`${API_BASE_URL}/drivers`); if (!response.ok) { console.error("Failed to fetch drivers, status:", response.status); return; } const drivers = await response.json(); updateDriverMarkers(drivers); } catch (error) { console.error("Error fetching drivers:", error); } }
-    async function handleConfirmBooking() { updateStatus("Requesting your ride..."); modalConfirmBtn.disabled = true; const bookingDetails = { pickup: { address: pickupInput.value, lat: pickupLatLng[0], lon: pickupLatLng[1] }, destination: { address: destinationInput.value, lat: destinationLatLng[0], lon: destinationLatLng[1] }, estimatedFare: estimatedFareGlobal }; try { const response = await fetch('/api/request-booking`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bookingDetails) }); const result = await response.json(); if (!response.ok) { throw new Error(result.message || "Booking failed."); } updateStatus(result.message); } catch (error) { updateStatus(`Error: ${error.message}`); } finally { modal.style.display = "none"; modalConfirmBtn.disabled = false; } }
-    function updateDriverMarkers(drivers) { const existingDriverIds = Object.keys(driverMarkers); const incomingDriverIds = drivers.map(d => d.id); const driverIcon = L.icon({ iconUrl: "https://cdn-icons-png.flaticon.com/512/2972/2972185.png", iconSize: [36, 36], iconAnchor: [18, 36] }); drivers.forEach(driver => { const latLng = [driver.lat, driver.lon]; if (driverMarkers[driver.id]) { driverMarkers[driver.id].setLatLng(latLng); } else { driverMarkers[driver.id] = L.marker(latLng, { icon: driverIcon }).addTo(map).bindPopup(`Driver ${driver.id}`); } }); existingDriverIds.forEach(id => { if (!incomingDriverIds.includes(id)) { map.removeLayer(driverMarkers[id]); delete driverMarkers[id]; } }); }
-    function handleFormSubmit(e) { e.preventDefault(); if (!pickupLatLng || !destinationLatLng) { updateStatus("Please select both pick-up and destination."); return; } modalPickupAddress.textContent = pickupInput.value; modalDestinationAddress.textContent = destinationInput.value; modalFare.textContent = estimatedFareGlobal ? `₱${estimatedFareGlobal.toFixed(2)}` : "Calculating..."; modal.style.display = "flex"; bookBtn.disabled = true; }
-    function handleUseLocation() { if (!navigator.geolocation) { updateStatus("Geolocation is not supported by your browser."); return; } useLocationBtn.disabled = true; updateStatus("Locating..."); navigator.geolocation.getCurrentPosition( (position) => { const { latitude, longitude } = position.coords; pickupLatLng = [latitude, longitude]; pickupInput.value = "Current Location"; updateBookingButton(); updateMapMarkersAndRoute(); map.setView(pickupLatLng, 15); updateStatus("Location detected. Choose your destination."); useLocationBtn.disabled = false; }, () => { updateStatus("Unable to retrieve your location. Please enter manually."); useLocationBtn.disabled = false; }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } ); }
-    function updateMapMarkersAndRoute() { userMarkers.forEach((m) => map.removeLayer(m)); userMarkers = []; if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; } if (pickupLatLng) { const pickupMarker = L.marker(pickupLatLng, { icon: pickupIcon }).addTo(map); pickupMarker.bindPopup("Pick-up").openPopup(); userMarkers.push(pickupMarker); } if (destinationLatLng) { const destMarker = L.marker(destinationLatLng, { icon: destinationIcon }).addTo(map); destMarker.bindPopup("Destination").openPopup(); userMarkers.push(destMarker); } if (pickupLatLng && destinationLatLng) { fetchRoute(pickupLatLng, destinationLatLng); } }
-    function fetchRoute(start, end) { const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`; updateStatus("Calculating route and fare..."); fetch(url) .then(res => { if (!res.ok) { throw new Error(`Routing service responded with status: ${res.status}`); } return res.json(); }) .then(data => { if (data.routes && data.routes.length > 0) { const route = data.routes[0], coords = route.geometry.coordinates.map((c) => [c[1], c[0]]); if (routeLayer) map.removeLayer(routeLayer); routeLayer = L.polyline(coords, { color: "#dc2626", weight: 5, opacity: 0.8 }).addTo(map); map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] }); const distanceKm = route.distance / 1000, durationMinutes = route.duration / 60; let distanceFare = 0; if (distanceKm > INITIAL_KM_COVERED) { distanceFare = (distanceKm - INITIAL_KM_COVERED) * SUCCEEDING_KM_RATE; } const timeFare = durationMinutes * PER_MINUTE_RATE; let estimatedFare = BASE_FARE + distanceFare + timeFare; estimatedFare = Math.max(estimatedFare, MINIMUM_FARE); estimatedFare = Math.round(estimatedFare / 5) * 5; estimatedFareGlobal = estimatedFare; updateStatus( `Route: ${distanceKm.toFixed(2)} km, ~${durationMinutes.toFixed(0)} mins. Fare: ₱${estimatedFare.toFixed(2)}` ); } else { updateStatus("Could not find a route. Please try different locations."); } }) .catch(error => { console.error("Route fetching error:", error); updateStatus("Error calculating route. Service may be unavailable."); }); }
-    function setAutocomplete(inputElem) { let container; const onInput = debounce(() => { const val = inputElem.value.trim(); closeSuggestions(); if (!val) return; geocode(val, (results) => { if (results.length === 0) return; container = document.createElement("div"); container.setAttribute("class", "autocomplete-items"); inputElem.closest('.input-wrapper').appendChild(container); results.forEach((item) => { let div = document.createElement("div"); div.textContent = item.display_name; div.addEventListener("click", () => onSelect(item)); container.appendChild(div); }); }); }, 300); function onSelect(item) { inputElem.value = item.display_name; if (inputElem.id === "pickup") { pickupLatLng = [parseFloat(item.lat), parseFloat(item.lon)]; } else if (inputElem.id === "destination") { destinationLatLng = [parseFloat(item.lat), parseFloat(item.lon)]; } closeSuggestions(); updateBookingButton(); updateMapMarkersAndRoute(); } function closeSuggestions() { if (container) { container.remove(); container = null; } } inputElem.addEventListener("input", onInput); document.addEventListener("click", (e) => { if (e.target !== inputElem && !e.target.closest('.autocomplete-items')) { closeSuggestions(); } }); }
-    function debounce(func, wait) { let timeout; return function (...args) { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), wait); }; }
-    function geocode(query, callback) { const viewbox = "116.0,21.0,127.0,4.0"; fetch( `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent( query )}&addressdetails=1&limit=5&countrycodes=ph&bounded=1&viewbox=${viewbox}` ) .then((res) => res.json()) .then((data) => callback(data)) .catch(() => callback([])); }
-    function updateStatus(message) { statusEl.textContent = message; }
-    function updateBookingButton() { bookBtn.disabled = !(pickupLatLng && destinationLatLng); }
-    initBookingFeatures();
-  })();
-</script>
+        // --- Helper for Status Messages ---
+        function displayStatusMessage(message, type) {
+            statusMessageEl.textContent = message;
+            statusMessageEl.className = `card ${type}`; // Apply type for styling (success, error, info)
+            statusMessageEl.style.display = 'block';
 
+            // Optional: Hide after some time for non-critical messages
+            if (type !== 'info') { // Keep info messages (like "Looking for drivers") visible
+                setTimeout(() => {
+                    statusMessageEl.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // --- Pusher for real-time updates (optional for this simple frontend, but good practice) ---
+        // This frontend could subscribe to its own unique channel (e.g., based on riderId or bookingId)
+        // to receive updates like "driver assigned", "driver arrived", etc.
+        /*
+        const pusher = new Pusher(PUSHER_KEY, { cluster: PUSHER_CLUSTER });
+        // Example of a personal rider channel (requires backend to authenticate and send to it)
+        // const riderChannel = pusher.subscribe(`private-rider-${RIDER_ID}`);
+        // riderChannel.bind('driver-assigned', function(data) {
+        //     displayStatusMessage(`Driver ${data.driverId} assigned!`, 'success');
+        //     // Update map to show driver location etc.
+        // });
+        */
+    </script>
 </body>
 </html>
