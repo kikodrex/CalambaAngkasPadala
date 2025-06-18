@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* UPDATED THEME COLORS */
+        /* All CSS from previous version, with additions for autocomplete */
         :root {
             --primary-color: #007bff; /* Vibrant Blue for main buttons/headings */
             --secondary-color: #fbc02d; /* Soft Yellow for secondary accents */
@@ -24,11 +24,11 @@
             margin: 0;
             padding: 0;
             display: flex;
-            flex-direction: column; /* Stack items vertically for mobile */
-            min-height: 100vh; /* Ensure full viewport height */
-            overflow-x: hidden; /* Prevent horizontal scroll */
-            background: linear-gradient(135deg, yellow 0%, red 33%, blue 66%, yellow 100%); /* Animated Yellow, Red, Blue background */
-            background-size: 300% 300%; /* Adjust size for animation */
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, yellow 0%, red 33%, blue 66%, yellow 100%);
+            background-size: 300% 300%;
             animation: background-pan 10s infinite alternate;
         }
 
@@ -37,10 +37,10 @@
             100% { background-position: 100% 50%; }
         }
 
-        #map-container { /* Container for the map to handle resizing */
+        #map-container {
             position: relative;
             width: 100%;
-            height: 40vh; /* Initial height for map on mobile */
+            height: 40vh;
         }
 
         #map {
@@ -50,14 +50,14 @@
         }
 
         #booking-panel {
-            width: 100%; /* Full width on mobile */
+            width: 100%;
             display: flex;
             flex-direction: column;
             padding: 20px;
             background: white;
             box-shadow: 0 0 15px rgba(0,0,0,0.1);
             z-index: 1000;
-            box-sizing: border-box; /* Ensure padding is inside the width */
+            box-sizing: border-box;
         }
 
         h1 {
@@ -65,9 +65,9 @@
             align-items: center;
             gap: 10px;
             margin: 0 0 20px 0;
-            font-size: 1.5em; /* Slightly smaller heading for mobile */
-            color: var(--primary-color); /* Themed Heading Color */
-            text-align: center; /* Center the heading */
+            font-size: 1.5em;
+            color: var(--primary-color);
+            text-align: center;
         }
 
         .card {
@@ -87,6 +87,7 @@
 
         .form-group {
             margin-bottom: 15px;
+            position: relative; /* Added for autocomplete positioning */
         }
 
         .form-group label {
@@ -94,29 +95,29 @@
             margin-bottom: 5px;
             font-weight: 500;
             color: var(--grey-dark);
-            font-size: 0.9em; /* Slightly smaller label for mobile */
+            font-size: 0.9em;
         }
 
         .form-group input,
         .form-group input::placeholder {
-            font-size: 1em; /* Keep input text readable */
+            font-size: 1em;
         }
 
         .form-group input::placeholder {
-            color: #9ca3af; /* Adjust placeholder color for better readability */
+            color: #9ca3af;
         }
 
         .form-group input {
             width: calc(100% - 20px);
-            padding: 12px; /* Slightly more padding for touch */
+            padding: 12px;
             border: 1px solid #d1d5db;
             border-radius: 6px;
-            box-sizing: border-box; /* Ensure padding is inside the width */
+            box-sizing: border-box;
         }
 
         button {
-            font-size: 1rem; /* Adjust button text size for mobile */
-            padding: 15px 25px; /* Larger padding for easier tapping */
+            font-size: 1rem;
+            padding: 15px 25px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -127,9 +128,9 @@
             justify-content: center;
             gap: 8px;
             font-weight: 500;
-            background-color: var(--primary-color); /* Themed Button Color */
-            width: 100%; /* Full width button on mobile */
-            box-sizing: border-box; /* Ensure padding is inside the width */
+            background-color: var(--primary-color);
+            width: 100%;
+            box-sizing: border-box;
         }
 
         button:hover {
@@ -147,18 +148,18 @@
         }
 
         #status-message.success {
-            background-color: #fff3cd; /* Lighter yellow background for success */
-            color: var(--success-color); /* Themed Success Color */
+            background-color: #fff3cd;
+            color: var(--success-color);
         }
 
         #status-message.error {
-            background-color: #f8d7da; /* Lighter red background for error */
-            color: var(--danger-color); /* Themed Danger Color */
+            background-color: #f8d7da;
+            color: var(--danger-color);
         }
 
         #status-message.info {
-            background-color: #d1ecf1; /* Lighter blue background for info */
-            color: var(--info-color); /* Themed Info Color */
+            background-color: #d1ecf1;
+            color: var(--info-color);
         }
 
         #location-status {
@@ -174,6 +175,41 @@
             margin-bottom: 10px;
             border-bottom: 1px solid #e5e7eb;
             padding-bottom: 10px;
+        }
+
+        /* Autocomplete Suggestions Styling */
+        .suggestions-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            border: 1px solid #ddd;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            width: 100%;
+            background-color: white;
+            z-index: 1001; /* Above other elements */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 0 0 6px 6px;
+        }
+
+        .suggestions-list li {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 0.95em;
+            color: var(--grey-dark);
+        }
+
+        .suggestions-list li:last-child {
+            border-bottom: none;
+        }
+
+        .suggestions-list li:hover,
+        .suggestions-list li.selected { /* For keyboard navigation highlight */
+            background-color: var(--grey-light);
+            color: var(--primary-color);
         }
 
         /* Adjust layout for larger screens (landscape mobile or tablets) */
@@ -239,7 +275,7 @@
         <div class="form-group">
             <label for="destination-address">Destination:</label>
             <input type="text" id="destination-address" placeholder="Los Baños, Laguna, Calabarzon, Philippines">
-        </div>
+            <div id="destination-suggestions" class="suggestions-list"></div> </div>
 
         <button id="request-ride-btn"><i class="material-icons">send</i>Book Now</button>
 
@@ -259,11 +295,13 @@
         // --- CONFIGURATION ---
         const PUSHER_KEY = "YOUR_PUBLIC_PUSHER_KEY"; // <-- PASTE YOUR PUBLIC KEY HERE (Same as Driver's)
         const PUSHER_CLUSTER = "ap1";
+        const NOMINATIM_API_URL = "https://nominatim.openstreetmap.org/search?format=json&limit=5&q="; // Nominatim API endpoint
 
         // --- DOM ELEMENTS ---
         const requestRideBtn = document.getElementById('request-ride-btn');
         const pickupAddressInput = document.getElementById('pickup-address');
         const destinationAddressInput = document.getElementById('destination-address');
+        const destinationSuggestionsEl = document.getElementById('destination-suggestions'); // New element
         const statusMessageEl = document.getElementById('status-message');
         const currentLatEl = document.getElementById('current-lat');
         const currentLonEl = document.getElementById('current-lon');
@@ -272,9 +310,10 @@
         // --- APP STATE ---
         let userMarker = null;
         let userLocation = null; // { lat, lon }
-        let currentBookingId = null; // Store the booking ID for this passenger's current ride
-        let currentRiderId = null;   // Store the rider ID to subscribe to a unique channel
-        let riderPusherChannel = null; // Pusher channel for this rider
+        let selectedDestinationLocation = null; // { lat, lon, address } - NEW for selected destination
+        let currentBookingId = null;
+        let currentRiderId = null;
+        let riderPusherChannel = null;
 
         // --- MAP INITIALIZATION ---
         const mapContainer = document.getElementById('map-container');
@@ -308,7 +347,7 @@
                             }).addTo(map).bindPopup("You are here!").openPopup();
                         }
                         locationErrorEl.textContent = "";
-                        pickupAddressInput.value = "Current Location"; // Auto-fill
+                        pickupAddressInput.value = "Current Location";
                     },
                     (error) => {
                         console.error("Geolocation error:", error);
@@ -327,64 +366,133 @@
                                 errorMessage += ` Error code: ${error.code}`;
                         }
                         locationErrorEl.textContent = errorMessage;
-                        map.setView([14.1713, 121.2078], 13); // Calamba fallback
+                        map.setView([14.1713, 121.2078], 13);
                         userLocation = null;
                     },
                     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
             } else {
                 locationErrorEl.textContent = "Geolocation not supported by your browser.";
-                map.setView([14.1713, 121.2078], 13); // Calamba fallback
+                map.setView([14.1713, 121.2078], 13);
                 userLocation = null;
             }
         }
         getUserLocation();
+
+        // --- AUTOSUGGESTION LOGIC (NEW) ---
+
+        let debounceTimeout;
+        destinationAddressInput.addEventListener('input', (e) => {
+            clearTimeout(debounceTimeout);
+            const query = e.target.value.trim();
+            if (query.length < 3) { // Only search if query is at least 3 characters
+                destinationSuggestionsEl.innerHTML = '';
+                selectedDestinationLocation = null; // Clear selected location if input changes
+                return;
+            }
+            debounceTimeout = setTimeout(() => {
+                fetchSuggestions(query);
+            }, 300); // Debounce by 300ms
+        });
+
+        async function fetchSuggestions(query) {
+            try {
+                const response = await fetch(`${NOMINATIM_API_URL}${encodeURIComponent(query)}`);
+                if (!response.ok) {
+                    throw new Error(`Nominatim API error: ${response.statusText}`);
+                }
+                const data = await response.json();
+                displaySuggestions(data);
+            } catch (error) {
+                console.error("Error fetching suggestions:", error);
+                destinationSuggestionsEl.innerHTML = `<li>Error fetching suggestions.</li>`;
+            }
+        }
+
+        function displaySuggestions(suggestions) {
+            destinationSuggestionsEl.innerHTML = ''; // Clear previous suggestions
+            if (suggestions.length === 0) {
+                destinationSuggestionsEl.innerHTML = `<li>No results found.</li>`;
+                return;
+            }
+
+            suggestions.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item.display_name;
+                li.dataset.lat = item.lat;
+                li.dataset.lon = item.lon;
+                li.dataset.address = item.display_name;
+                li.addEventListener('click', () => {
+                    destinationAddressInput.value = item.display_name;
+                    selectedDestinationLocation = {
+                        lat: parseFloat(item.lat),
+                        lon: parseFloat(item.lon),
+                        address: item.display_name
+                    };
+                    destinationSuggestionsEl.innerHTML = ''; // Hide suggestions after selection
+                });
+                destinationSuggestionsEl.appendChild(li);
+            });
+        }
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!destinationAddressInput.contains(e.target) && !destinationSuggestionsEl.contains(e.target)) {
+                destinationSuggestionsEl.innerHTML = '';
+            }
+        });
+
 
         // --- RIDE REQUEST FUNCTION ---
         requestRideBtn.addEventListener('click', async () => {
             const pickupAddress = pickupAddressInput.value.trim();
             const destinationAddress = destinationAddressInput.value.trim();
 
-            if (!pickupAddress || !destinationAddress) {
-                displayStatusMessage("Please enter both pickup and destination.", "error");
+            if (!pickupAddress || pickupAddress === "Current Location") { // Allow "Current Location" placeholder
+                displayStatusMessage("Please confirm your pickup address.", "error");
+                return;
+            }
+            if (!destinationAddress) {
+                displayStatusMessage("Please enter a destination address.", "error");
+                return;
+            }
+            // IMPORTANT: Now we validate if a suggestion was selected for destination
+            if (!selectedDestinationLocation || selectedDestinationLocation.address !== destinationAddress) {
+                displayStatusMessage("Please select a valid destination from the suggestions.", "error");
                 return;
             }
 
             if (!userLocation || !userLocation.lat || !userLocation.lon) {
                 displayStatusMessage("Your current location is not available. Please enable it and wait.", "error");
-                getUserLocation(); // Try to get location again
+                getUserLocation();
                 return;
             }
 
-            // Generate unique IDs for booking and rider for this request
             currentBookingId = `booking_${Date.now()}_${Math.floor(Math.random() * 90000) + 10000}`;
             currentRiderId = `rider_${Math.floor(1000 + Math.random() * 9000)}`;
 
             const rideRequestData = {
                 bookingId: currentBookingId,
                 pickup: {
-                    address: pickupAddress,
+                    address: pickupAddress, // This will be "Current Location" for now
                     lat: userLocation.lat,
                     lon: userLocation.lon
                 },
-                destination: {
-                    address: destinationAddress,
-                    // Dummy coordinates for destination for now, relative to current user for variety
-                    lat: userLocation.lat + (Math.random() - 0.5) * 0.05,
-                    lon: userLocation.lon + (Math.random() - 0.5) * 0.05
+                destination: { // Use the data from the selected suggestion
+                    address: selectedDestinationLocation.address,
+                    lat: selectedDestinationLocation.lat,
+                    lon: selectedDestinationLocation.lon
                 },
-                riderId: currentRiderId, // Assign the generated rider ID
+                riderId: currentRiderId,
                 distance: (Math.random() * 5 + 1).toFixed(1), // Dummy distance
                 fare: (Math.random() * 50 + 30).toFixed(2) // Dummy fare
             };
 
-            // --- DEBUGGING LOGS ---
             console.log("Frontend: Sending ride request with bookingId:", rideRequestData.bookingId);
             console.log("Frontend: Full rideRequestData being sent:", JSON.stringify(rideRequestData));
-            // --- END DEBUGGING LOGS ---
 
             displayStatusMessage("Requesting ride...", "info");
-            requestRideBtn.disabled = true; // Disable button to prevent multiple requests
+            requestRideBtn.disabled = true;
 
             try {
                 const response = await fetch('/api/request-booking', {
@@ -393,15 +501,13 @@
                     body: JSON.stringify(rideRequestData)
                 });
 
-                const result = await response.json(); // Attempt to parse JSON response
+                const result = await response.json();
 
                 if (response.ok) {
                     displayStatusMessage(`Ride requested! Booking ID: ${result.bookingId || currentBookingId}. Looking for drivers...`, "success");
-                    // --- SUBSCRIBE TO RIDER'S SPECIFIC PUSHER CHANNEL ---
                     subscribeToRiderChannel(currentRiderId);
 
                 } else {
-                    // Log the error from the backend response if available
                     console.error("Backend Error Response:", result);
                     displayStatusMessage(`Error: ${result.message || 'Failed to request ride.'}`, "error");
                 }
@@ -418,7 +524,6 @@
             statusMessageEl.textContent = message;
             statusMessageEl.className = `card ${type}`;
             statusMessageEl.style.display = 'block';
-            // Info messages (like "Looking for drivers") stay visible until updated by Pusher
             if (type !== 'info') {
                 setTimeout(() => {
                     statusMessageEl.style.display = 'none';
@@ -431,22 +536,18 @@
             cluster: PUSHER_CLUSTER
         });
 
-        // Function to subscribe to the rider's specific channel
         function subscribeToRiderChannel(riderId) {
-            // Unsubscribe from any previous rider channel to avoid multiple listeners
             if (riderPusherChannel) {
                 pusher.unsubscribe(riderPusherChannel.name);
                 console.log(`Pusher: Unsubscribed from ${riderPusherChannel.name}`);
             }
 
-            // The channel name should match what your backend triggers (e.g., `rider-${riderId}`)
             riderPusherChannel = pusher.subscribe(`rider-${riderId}`);
             console.log(`Pusher: Subscribed to rider channel: rider-${riderId}`);
 
             riderPusherChannel.bind('driver-assigned', function(data) {
                 displayStatusMessage(`Driver ${data.driverId} assigned! Arriving soon.`, 'info');
                 console.log('Pusher: Driver assigned event for passenger:', data);
-                // You could also display driver details on the map here
             });
 
             riderPusherChannel.bind('driver-arrived', function(data) {
@@ -462,7 +563,6 @@
             riderPusherChannel.bind('ride-completed', function(data) {
                 displayStatusMessage(`Your ride is completed! Total fare: PHP ${data.finalFare || 'N/A'}.`, 'success');
                 console.log('Pusher: Ride completed event for passenger:', data);
-                // Optionally clear UI after ride completion and unsubscribe
                 setTimeout(() => {
                     displayStatusMessage("Thank you for riding!", "info");
                     if (riderPusherChannel) {
@@ -471,16 +571,15 @@
                         currentBookingId = null;
                         currentRiderId = null;
                     }
-                    // Reset inputs for a new ride
                     pickupAddressInput.value = "Current Location";
                     destinationAddressInput.value = "";
+                    selectedDestinationLocation = null; // Clear selected destination
                 }, 5000);
             });
 
             riderPusherChannel.bind('ride-canceled', function(data) {
                 displayStatusMessage(`Your ride was canceled. Reason: ${data.reason || 'Unknown'}`, 'error');
                 console.log('Pusher: Ride canceled event for passenger:', data);
-                // Clear state if ride canceled
                 if (riderPusherChannel) {
                     pusher.unsubscribe(riderPusherChannel.name);
                     riderPusherChannel = null;
@@ -490,7 +589,6 @@
             });
         }
 
-        // Initial setup for Pusher connection status (optional)
         pusher.connection.bind('connected', function() {
             console.log('Pusher: Connected to real-time service for passenger.');
         });
