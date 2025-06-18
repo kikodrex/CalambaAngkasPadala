@@ -29,7 +29,7 @@
             flex-direction: column;
             min-height: 100vh;
             overflow-x: hidden;
-            background: linear-gradient(135deg, yellow 0%, red 33%, blue 66%, yellow 100%); /* Animated background */
+            background: linear-gradient(135deg, yellow 0%, red 33%, blue 66%, yellow 100%);
             background-size: 300% 300%;
             animation: background-pan 10s infinite alternate;
             color: var(--text-color);
@@ -43,7 +43,7 @@
         #map-container {
             position: relative;
             width: 100%;
-            height: 40vh; /* Map height on mobile */
+            height: 40vh;
         }
 
         #map {
@@ -56,10 +56,10 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            padding: 24px; /* Increased padding */
+            padding: 24px;
             background: white;
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.1); /* Shadow for bottom panel feel */
-            border-top-left-radius: 16px; /* Rounded top corners */
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+            border-top-left-radius: 16px;
             border-top-right-radius: 16px;
             z-index: 1000;
             box-sizing: border-box;
@@ -68,25 +68,25 @@
         h1 {
             display: flex;
             align-items: center;
-            justify-content: center; /* Centered on mobile */
+            justify-content: center;
             gap: 12px;
-            margin: 0 0 24px 0; /* Increased margin */
-            font-size: 1.8em; /* Larger heading */
-            color: var(--primary-color); /* Themed Heading Color */
+            margin: 0 0 24px 0;
+            font-size: 1.8em;
+            color: var(--primary-color);
             font-weight: 700;
         }
 
         h1 .material-icons {
-            font-size: 1.2em; /* Icon size relative to heading */
+            font-size: 1.2em;
         }
 
         .card {
             border: 1px solid var(--border-color);
             margin-top: 20px;
-            padding: 18px; /* Slightly more padding */
-            border-radius: 12px; /* More rounded corners */
+            padding: 18px;
+            border-radius: 12px;
             background: #fafafa;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* Subtle card shadow */
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
         .card h2 {
@@ -99,37 +99,44 @@
         }
 
         .form-group {
-            margin-bottom: 20px; /* Increased spacing */
+            margin-bottom: 20px;
             position: relative;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px; /* Increased spacing */
-            font-weight: 600; /* Bolder label */
+            margin-bottom: 8px;
+            font-weight: 600;
             color: var(--text-color);
             font-size: 0.95em;
         }
 
-        .form-group input {
-            width: 100%; /* Full width */
-            padding: 14px 16px; /* Larger padding for touch input */
-            border: 1px solid var(--border-color);
-            border-radius: 8px; /* Rounded input fields */
+        .form-group input,
+        .form-group select, /* Added for select element */
+        .form-group input::placeholder {
             font-size: 1em;
-            color: var(--text-color);
-            background-color: #fcfcfc;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* Inner shadow */
-            box-sizing: border-box;
         }
 
         .form-group input::placeholder {
             color: var(--grey-dark);
         }
 
+        .form-group input,
+        .form-group select { /* Added select for styling */
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1em;
+            color: var(--text-color);
+            background-color: #fcfcfc;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+
         button {
-            font-size: 1.1rem; /* Slightly larger button text */
-            padding: 16px 20px; /* Larger padding for tap area */
+            font-size: 1.1rem;
+            padding: 16px 20px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -139,7 +146,7 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            font-weight: 600; /* Bolder button text */
+            font-weight: 600;
             background-color: var(--primary-color);
             width: 100%;
             box-sizing: border-box;
@@ -147,31 +154,31 @@
 
         button:hover {
             opacity: 0.9;
-            box-shadow: 0 4px 12px rgba(0,123,255,0.3); /* Subtle hover shadow */
+            box-shadow: 0 4px 12px rgba(0,123,255,0.3);
         }
 
         #status-message {
-            margin-top: 24px; /* Increased margin */
-            padding: 16px; /* Larger padding */
+            margin-top: 24px;
+            padding: 16px;
             border-radius: 8px;
             text-align: center;
-            font-weight: 600; /* Bolder text */
+            font-weight: 600;
             display: none;
             font-size: 1em;
         }
 
         #status-message.success {
-            background-color: #e6ffed; /* Lighter shade */
+            background-color: #e6ffed;
             color: var(--success-color);
         }
 
         #status-message.error {
-            background-color: #ffe6e6; /* Lighter shade */
+            background-color: #ffe6e6;
             color: var(--danger-color);
         }
 
         #status-message.info {
-            background-color: #e6f7ff; /* Lighter shade */
+            background-color: #e6f7ff;
             color: var(--info-color);
         }
 
@@ -260,7 +267,7 @@
                 font-size: 1.2rem;
             }
 
-            .form-group input {
+            .form-group input, .form-group select {
                 font-size: 1.05em;
             }
 
@@ -284,6 +291,13 @@
     </div>
     <div id="booking-panel">
         <h1><i class="material-icons">directions_car</i>Book a Ride</h1>
+
+        <div class="form-group">
+            <label for="select-rider">Select Rider:</label>
+            <select id="select-rider">
+                <option value="">Loading riders...</option>
+            </select>
+        </div>
 
         <div class="form-group">
             <label for="pickup-address">Pickup Location:</label>
@@ -317,6 +331,7 @@
 
         // --- DOM ELEMENTS ---
         const requestRideBtn = document.getElementById('request-ride-btn');
+        const selectRiderInput = document.getElementById('select-rider'); // NEW: Select Rider dropdown
         const pickupAddressInput = document.getElementById('pickup-address');
         const destinationAddressInput = document.getElementById('destination-address');
         const destinationSuggestionsEl = document.getElementById('destination-suggestions');
@@ -330,7 +345,7 @@
         let userLocation = null;
         let selectedDestinationLocation = null;
         let currentBookingId = null;
-        let currentRiderId = null;   // This will be randomly generated by default
+        let currentRiderId = null;   // This will now come from the dropdown
         let riderPusherChannel = null;
 
         // --- MAP INITIALIZATION ---
@@ -396,6 +411,41 @@
             }
         }
         getUserLocation();
+
+        // --- RIDER SELECTION LOGIC (NEW) ---
+        async function fetchRidersForDropdown() {
+            selectRiderInput.innerHTML = '<option value="">Loading riders...</option>';
+            try {
+                const response = await fetch('/api/riders'); // GET request to your new backend endpoint
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch riders: ${response.statusText}`);
+                }
+                const riders = await response.json();
+
+                selectRiderInput.innerHTML = ''; // Clear loading message
+                if (riders.length === 0) {
+                    selectRiderInput.innerHTML = '<option value="">No riders registered. Add via admin panel.</option>';
+                    requestRideBtn.disabled = true; // Disable booking if no riders
+                } else {
+                    selectRiderInput.innerHTML = '<option value="">-- Select a Rider --</option>'; // Default option
+                    riders.forEach(rider => {
+                        const option = document.createElement('option');
+                        option.value = rider.riderId;
+                        option.textContent = `${rider.name} (${rider.riderId})`;
+                        selectRiderInput.appendChild(option);
+                    });
+                    requestRideBtn.disabled = false; // Enable button if riders are loaded
+                }
+            } catch (error) {
+                console.error("Error fetching riders for dropdown:", error);
+                selectRiderInput.innerHTML = '<option value="">Error loading riders</option>';
+                requestRideBtn.disabled = true; // Disable on error
+                displayStatusMessage(`Error loading riders: ${error.message}. Check Admin Panel and backend.`, 'error');
+            }
+        }
+
+        // Fetch riders when the page loads
+        document.addEventListener('DOMContentLoaded', fetchRidersForDropdown);
 
         // --- AUTOSUGGESTION LOGIC ---
 
@@ -469,9 +519,14 @@
 
         // --- RIDE REQUEST FUNCTION ---
         requestRideBtn.addEventListener('click', async () => {
+            const selectedRiderId = selectRiderInput.value; // Get selected rider ID
             const pickupAddress = pickupAddressInput.value.trim();
             const destinationAddress = destinationAddressInput.value.trim();
 
+            if (!selectedRiderId) { // Validate rider selection
+                displayStatusMessage("Please select a rider from the list.", "error");
+                return;
+            }
             if (!pickupAddress || pickupAddress === "Current Location") {
                 displayStatusMessage("Please confirm your pickup address.", "error");
                 return;
@@ -492,11 +547,7 @@
             }
 
             currentBookingId = `booking_${Date.now()}_${Math.floor(Math.random() * 90000) + 10000}`;
-            // IMPORTANT: For testing with registered riders, you may temporarily hardcode currentRiderId here:
-            // currentRiderId = "PASTE_YOUR_REGISTERED_RIDER_ID_HERE";
-            // Otherwise, it will generate a random one which will be rejected by backend validation:
-            currentRiderId = `rider_${Math.floor(1000 + Math.random() * 9000)}`; 
-
+            currentRiderId = selectedRiderId; // Use the selected rider ID
 
             const rideRequestData = {
                 bookingId: currentBookingId,
@@ -601,6 +652,7 @@
                     pickupAddressInput.value = "Current Location";
                     destinationAddressInput.value = "";
                     selectedDestinationLocation = null;
+                    fetchRidersForDropdown(); // Refresh rider list in case they need to select a new one
                 }, 5000);
             });
 
