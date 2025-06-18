@@ -1,0 +1,6 @@
+[build]
+  publish = "."            # This tells Netlify where your static files are ('.' means root, or use 'public' if they are in a public/ folder)
+  functions = "netlify/functions" # This tells Netlify where your serverless functions are
+
+# If you have a build command (like a frontend framework), specify it here
+# command = "npm run build"
