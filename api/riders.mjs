@@ -1,65 +1,189 @@
-// api/riders.js
-
-import { Redis } from '@upstash/redis'; // Import Upstash Redis client
+// riders.mjs
+import { Redis } from '@upstash/redis';
+import { Ratelimit } from '@upstash/ratelimit';
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
+// Rate limiter for admin actions
+const adminLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(30, '1m'),
+  prefix: 'rate-limit:admin'
+});
+
 export default async function handler(req, res) {
-  if (req.method === 'POST') {
-    // --- Add a new rider ---
-    const { riderId, name, phone } = req.body;
-
-    if (!riderId || !name || !phone) {
-      return res.status(400).json({ message: 'Missing riderId, name, or phone' });
+  try {
+    // 1. Authenticate admin (example using JWT)
+    const authToken = req.headers.authorization?.split(' ')[1];
+    if (!verifyAdminToken(authToken)) {
+      return res.status(401).json({ 
+        error: 'unauthorized',
+        message: 'Invalid admin credentials' 
+      });
     }
 
-    try {
-      // Store rider details as a hash (object)
-      await redis.hset(`rider:${riderId}`, { riderId, name, phone });
-      // Add riderId to a set for easy retrieval of all rider IDs
-      await redis.sadd('all_rider_ids', riderId); // Use a set to store all rider IDs
-
-      console.log(`API: riders - Rider ${riderId} (${name}) added.`);
-      return res.status(200).json({ message: 'Rider added successfully', riderId });
-
-    } catch (error) {
-      console.error('API: riders - Error adding rider:', error);
-      return res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    // 2. Apply rate limiting
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const { success } = await adminLimiter.limit(ip);
+    if (!success) {
+      return res.status(429).json({
+        error: 'rate_limit_exceeded',
+        message: 'Too many requests'
+      });
     }
 
-  } else if (req.method === 'GET') {
-    // --- Get all registered riders ---
-    try {
-      // Get all rider IDs from the set
-      const riderIds = await redis.smembers('all_rider_ids'); // Get all members from the set
-
-      if (riderIds.length === 0) {
-        return res.status(200).json([]); // No riders found
+    // 3. Handle GET requests (fetch riders)
+    if (req.method === 'GET') {
+      const { riderId } = req.query;
+      
+      if (riderId) {
+        // Single rider lookup
+        const rider = await redis.get(`rider:${riderId}`);
+        if (!rider) {
+          return res.status(404).json({
+            error: 'rider_not_found',
+            message: `Rider ${riderId} not registered`,
+            action: {
+              type: 'registration',
+              endpoint: '/api/riders',
+              method: 'POST'
+            }
+          });
+        }
+        return res.json(rider);
       }
 
-      // Fetch details for each rider ID
-      const pipeline = redis.pipeline(); // Use pipeline for efficiency
-      riderIds.forEach(id => {
-        pipeline.hgetall(`rider:${id}`);
-      });
-      const ridersData = await pipeline.exec();
+      // Bulk rider fetch
+      const riderIds = await redis.smembers('registered_riders');
+      const pipeline = redis.pipeline();
+      riderIds.forEach(id => pipeline.get(`rider:${id}`));
+      const results = await pipeline.exec();
+      
+      const riders = results.map(([err, data]) => {
+        if (err) throw err;
+        return data;
+      }).filter(Boolean);
 
-      // Filter out any null results if a rider ID was in the set but data was missing
-      const registeredRiders = ridersData.filter(r => r !== null && Object.keys(r).length > 0);
-
-      console.log(`API: riders - Fetched ${registeredRiders.length} registered riders.`);
-      return res.status(200).json(registeredRiders);
-
-    } catch (error) {
-      console.error('API: riders - Error fetching riders:', error);
-      return res.status(500).json({ message: 'Internal Server Error', error: error.message });
+      return res.json(riders);
     }
 
-  } else {
-    // --- Method Not Allowed ---
-    res.status(405).json({ message: 'Method Not Allowed' });
+    // 4. Handle POST requests (create/update riders)
+    if (req.method === 'POST') {
+      const { riderId, name, phone, action } = req.body;
+
+      if (action === 'verify') {
+        // Admin verification endpoint
+        return handleVerification(req, res);
+      }
+
+      // Auto-registration flow
+      if (!riderId || !name) {
+        return res.status(400).json({
+          error: 'invalid_input',
+          message: 'Missing riderId or name'
+        });
+      }
+
+      const riderKey = `rider:${riderId}`;
+      const riderData = {
+        riderId,
+        name,
+        phone: phone || null,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Check for existing rider
+      const exists = await redis.exists(riderKey);
+      if (exists) {
+        return res.status(409).json({
+          error: 'rider_exists',
+          message: `Rider ${riderId} already registered`
+        });
+      }
+
+      // Save to Redis
+      await redis.set(riderKey, riderData);
+      await redis.sadd('registered_riders', riderId);
+
+      // Notify admin channel (optional)
+      await redis.publish('admin:notifications', JSON.stringify({
+        type: 'new_rider',
+        riderId,
+        name
+      }));
+
+      return res.status(201).json({
+        success: true,
+        riderId,
+        requiresVerification: true,
+        verificationUrl: `${process.env.ADMIN_PORTAL}/verify/${riderId}`
+      });
+    }
+
+    // 5. Handle unsupported methods
+    return res.status(405).json({
+      error: 'method_not_allowed',
+      message: 'Only GET and POST methods are supported'
+    });
+
+  } catch (error) {
+    console.error('Riders API error:', error);
+    return res.status(500).json({
+      error: 'server_error',
+      message: 'Internal server error',
+      ...(process.env.NODE_ENV === 'development' && {
+        stack: error.stack
+      })
+    });
   }
+}
+
+// Helper function for verification workflow
+async function handleVerification(req, res) {
+  const { riderId, status } = req.body;
+  
+  if (!['verified', 'suspended'].includes(status)) {
+    return res.status(400).json({
+      error: 'invalid_status',
+      message: 'Status must be "verified" or "suspended"'
+    });
+  }
+
+  const riderKey = `rider:${riderId}`;
+  const rider = await redis.get(riderKey);
+  
+  if (!rider) {
+    return res.status(404).json({
+      error: 'rider_not_found',
+      message: `Rider ${riderId} not found`
+    });
+  }
+
+  // Update rider status
+  const updatedRider = {
+    ...rider,
+    status,
+    updatedAt: new Date().toISOString(),
+    [status === 'verified' ? 'verifiedAt' : 'suspendedAt']: new Date().toISOString()
+  };
+
+  await redis.set(riderKey, updatedRider);
+  
+  return res.json({
+    success: true,
+    riderId,
+    newStatus: status
+  });
+}
+
+// Mock auth verification (replace with your actual auth logic)
+function verifyAdminToken(token) {
+  // In production, use JWT verification
+  return process.env.NODE_ENV === 'development' || 
+         token === process.env.ADMIN_SECRET;
 }
