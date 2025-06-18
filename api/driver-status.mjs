@@ -1,27 +1,41 @@
-// In file: /api/driver-status.mjs
-import { Redis } from '@upstash/redis';
+// api/driver-status.js
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+import { Redis } from '@upstash/redis'; // Updated import
+
+const redis = new Redis({ // Changed 'kv' to 'redis'
+  url: process.env.UPSTASH_REDIS_REST_URL, // Updated ENV VAR NAME
+  token: process.env.UPSTASH_REDIS_REST_TOKEN, // Updated ENV VAR NAME
 });
 
-export default async function handler(request, response) {
-  if (request.method !== 'POST') {
-    return response.status(405).end();
-  }
-
-  try {
-    const { driverId, status, location } = request.body;
-    if (status === 'online') {
-      await redis.sadd('available_drivers', driverId);
-      await redis.hset(driverId, { id: driverId, ...location });
-    } else { // offline
-      await redis.srem('available_drivers', driverId);
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ message: 'Method Not Allowed' });
     }
-    response.status(200).json({ success: true, status: `Driver ${driverId} is now ${status}` });
-  } catch (error) {
-    console.error("Error updating driver status:", error);
-    response.status(500).json({ error: 'Failed to update driver status.' });
-  }
+
+    const { driverId, status, location } = req.body;
+
+    if (!driverId || !status) {
+        return res.status(400).json({ message: 'Missing driverId or status' });
+    }
+
+    try {
+        if (status === 'online' && location) {
+            // Store driver's live location and status
+            await redis.hset(`driver:${driverId}`, { status: 'online', lat: location.lat, lon: location.lon, last_update: Date.now() }); // Changed 'kv' to 'redis'
+            // Optionally, you might trigger a Pusher event here to broadcast driver locations
+            // pusher.trigger('driver-locations', 'location-update', { driverId, location });
+            console.log(`API: driver-status - Driver ${driverId} online at [${location.lat}, ${location.lon}]`);
+        } else if (status === 'offline') {
+            // Mark driver offline
+            await redis.hset(`driver:${driverId}`, { status: 'offline', last_update: Date.now() }); // Changed 'kv' to 'redis'
+            console.log(`API: driver-status - Driver ${driverId} is offline.`);
+        } else {
+            return res.status(400).json({ message: 'Invalid status or missing location for online status.' });
+        }
+
+        res.status(200).json({ message: 'Driver status updated' });
+    } catch (error) {
+        console.error('API: driver-status - Error updating driver status:', error);
+        res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    }
 }
