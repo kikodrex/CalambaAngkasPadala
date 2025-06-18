@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* All CSS from previous version, with additions for autocomplete */
+        /* Base Colors (Your Theme) */
         :root {
             --primary-color: #007bff; /* Vibrant Blue for main buttons/headings */
             --secondary-color: #fbc02d; /* Soft Yellow for secondary accents */
@@ -17,6 +17,8 @@
             --info-color: #17a2b8; /* A lighter Blue for info messages */
             --grey-light: #f3f4f6;
             --grey-dark: #4b5563;
+            --text-color: #333;
+            --border-color: #e0e0e0;
         }
 
         body {
@@ -27,9 +29,10 @@
             flex-direction: column;
             min-height: 100vh;
             overflow-x: hidden;
-            background: linear-gradient(135deg, yellow 0%, red 33%, blue 66%, yellow 100%);
+            background: linear-gradient(135deg, yellow 0%, red 33%, blue 66%, yellow 100%); /* Animated background */
             background-size: 300% 300%;
             animation: background-pan 10s infinite alternate;
+            color: var(--text-color);
         }
 
         @keyframes background-pan {
@@ -40,7 +43,7 @@
         #map-container {
             position: relative;
             width: 100%;
-            height: 40vh;
+            height: 40vh; /* Map height on mobile */
         }
 
         #map {
@@ -53,9 +56,11 @@
             width: 100%;
             display: flex;
             flex-direction: column;
-            padding: 20px;
+            padding: 24px; /* Increased padding */
             background: white;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.1); /* Shadow for bottom panel feel */
+            border-top-left-radius: 16px; /* Rounded top corners */
+            border-top-right-radius: 16px;
             z-index: 1000;
             box-sizing: border-box;
         }
@@ -63,61 +68,68 @@
         h1 {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin: 0 0 20px 0;
-            font-size: 1.5em;
+            justify-content: center; /* Centered on mobile */
+            gap: 12px;
+            margin: 0 0 24px 0; /* Increased margin */
+            font-size: 1.8em; /* Larger heading */
             color: var(--primary-color);
-            text-align: center;
+            font-weight: 700;
+        }
+
+        h1 .material-icons {
+            font-size: 1.2em; /* Icon size relative to heading */
         }
 
         .card {
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--border-color);
             margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 18px; /* Slightly more padding */
+            border-radius: 12px; /* More rounded corners */
             background: #fafafa;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* Subtle card shadow */
         }
 
         .card h2 {
-            margin: 0 0 10px 0;
-            font-size: 1em;
-            border-bottom: 1px solid #e5e7eb;
+            margin: 0 0 12px 0;
+            font-size: 1.1em;
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 10px;
+            font-weight: 600;
+            color: var(--grey-dark);
         }
 
         .form-group {
-            margin-bottom: 15px;
-            position: relative; /* Added for autocomplete positioning */
+            margin-bottom: 20px; /* Increased spacing */
+            position: relative;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: var(--grey-dark);
-            font-size: 0.9em;
-        }
-
-        .form-group input,
-        .form-group input::placeholder {
-            font-size: 1em;
-        }
-
-        .form-group input::placeholder {
-            color: #9ca3af;
+            margin-bottom: 8px; /* Increased spacing */
+            font-weight: 600; /* Bolder label */
+            color: var(--text-color);
+            font-size: 0.95em;
         }
 
         .form-group input {
-            width: calc(100% - 20px);
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
+            width: 100%; /* Full width */
+            padding: 14px 16px; /* Larger padding for touch input */
+            border: 1px solid var(--border-color);
+            border-radius: 8px; /* Rounded input fields */
+            font-size: 1em;
+            color: var(--text-color);
+            background-color: #fcfcfc;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* Inner shadow */
             box-sizing: border-box;
         }
 
+        .form-group input::placeholder {
+            color: var(--grey-dark);
+        }
+
         button {
-            font-size: 1rem;
-            padding: 15px 25px;
+            font-size: 1.1rem; /* Slightly larger button text */
+            padding: 16px 20px; /* Larger padding for tap area */
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -126,8 +138,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            font-weight: 500;
+            gap: 10px;
+            font-weight: 600; /* Bolder button text */
             background-color: var(--primary-color);
             width: 100%;
             box-sizing: border-box;
@@ -135,46 +147,49 @@
 
         button:hover {
             opacity: 0.9;
+            box-shadow: 0 4px 12px rgba(0,123,255,0.3); /* Subtle hover shadow */
         }
 
         #status-message {
-            margin-top: 20px;
-            padding: 15px;
+            margin-top: 24px; /* Increased margin */
+            padding: 16px; /* Larger padding */
             border-radius: 8px;
             text-align: center;
-            font-weight: 500;
+            font-weight: 600; /* Bolder text */
             display: none;
-            font-size: 0.9em;
+            font-size: 1em;
         }
 
         #status-message.success {
-            background-color: #fff3cd;
+            background-color: #e6ffed; /* Lighter shade */
             color: var(--success-color);
         }
 
         #status-message.error {
-            background-color: #f8d7da;
+            background-color: #ffe6e6; /* Lighter shade */
             color: var(--danger-color);
         }
 
         #status-message.info {
-            background-color: #d1ecf1;
+            background-color: #e6f7ff; /* Lighter shade */
             color: var(--info-color);
         }
 
         #location-status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
+            margin-top: 24px;
+            padding: 18px;
+            border-radius: 12px;
             background: #fafafa;
-            font-size: 0.9em;
+            font-size: 0.95em;
         }
 
         #location-status h2 {
-            font-size: 1em;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #e5e7eb;
+            font-size: 1.1em;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 10px;
+            font-weight: 600;
+            color: var(--grey-dark);
         }
 
         /* Autocomplete Suggestions Styling */
@@ -182,24 +197,24 @@
             list-style: none;
             padding: 0;
             margin: 0;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-top: none;
             max-height: 200px;
             overflow-y: auto;
             position: absolute;
             width: 100%;
             background-color: white;
-            z-index: 1001; /* Above other elements */
+            z-index: 1001;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            border-radius: 0 0 6px 6px;
+            border-radius: 0 0 8px 8px; /* Match input border radius */
         }
 
         .suggestions-list li {
-            padding: 10px;
+            padding: 12px 16px; /* Consistent padding */
             cursor: pointer;
             border-bottom: 1px solid #eee;
             font-size: 0.95em;
-            color: var(--grey-dark);
+            color: var(--text-color);
         }
 
         .suggestions-list li:last-child {
@@ -207,12 +222,12 @@
         }
 
         .suggestions-list li:hover,
-        .suggestions-list li.selected { /* For keyboard navigation highlight */
+        .suggestions-list li.selected {
             background-color: var(--grey-light);
             color: var(--primary-color);
         }
 
-        /* Adjust layout for larger screens (landscape mobile or tablets) */
+        /* Responsive Layout for Desktop/Larger Screens */
         @media (min-width: 769px) {
             body {
                 flex-direction: row;
@@ -228,15 +243,17 @@
             }
 
             #booking-panel {
-                width: 380px;
+                width: 400px; /* Slightly wider panel on desktop */
                 height: 100vh;
                 overflow-y: auto;
                 box-sizing: border-box;
+                border-radius: 0; /* No top border radius on desktop side panel */
+                box-shadow: -4px 0 15px rgba(0,0,0,0.1); /* Shadow for side panel */
             }
 
             h1 {
-                font-size: 1.8em;
-                text-align: left;
+                font-size: 2.2em; /* Larger heading on desktop */
+                justify-content: flex-start; /* Align left on desktop */
             }
 
             button {
@@ -244,11 +261,11 @@
             }
 
             .form-group input {
-                font-size: 1em;
+                font-size: 1.05em;
             }
 
             #status-message {
-                font-size: 1em;
+                font-size: 1.05em;
             }
 
             #location-status {
@@ -256,7 +273,7 @@
             }
 
             #location-status h2 {
-                font-size: 1.1em;
+                font-size: 1.15em;
             }
         }
     </style>
@@ -274,8 +291,9 @@
         </div>
         <div class="form-group">
             <label for="destination-address">Destination:</label>
-            <input type="text" id="destination-address" placeholder="Los Baños, Laguna, Calabarzon, Philippines">
-            <div id="destination-suggestions" class="suggestions-list"></div> </div>
+            <input type="text" id="destination-address" placeholder="Enter destination address">
+            <div id="destination-suggestions" class="suggestions-list"></div>
+        </div>
 
         <button id="request-ride-btn"><i class="material-icons">send</i>Book Now</button>
 
@@ -295,13 +313,13 @@
         // --- CONFIGURATION ---
         const PUSHER_KEY = "YOUR_PUBLIC_PUSHER_KEY"; // <-- PASTE YOUR PUBLIC KEY HERE (Same as Driver's)
         const PUSHER_CLUSTER = "ap1";
-        const NOMINATIM_API_URL = "https://nominatim.openstreetmap.org/search?format=json&limit=5&q="; // Nominatim API endpoint
+        const NOMINATIM_API_URL = "https://nominatim.openstreetmap.org/search?format=json&limit=5&q=";
 
         // --- DOM ELEMENTS ---
         const requestRideBtn = document.getElementById('request-ride-btn');
         const pickupAddressInput = document.getElementById('pickup-address');
         const destinationAddressInput = document.getElementById('destination-address');
-        const destinationSuggestionsEl = document.getElementById('destination-suggestions'); // New element
+        const destinationSuggestionsEl = document.getElementById('destination-suggestions');
         const statusMessageEl = document.getElementById('status-message');
         const currentLatEl = document.getElementById('current-lat');
         const currentLonEl = document.getElementById('current-lon');
@@ -309,8 +327,8 @@
 
         // --- APP STATE ---
         let userMarker = null;
-        let userLocation = null; // { lat, lon }
-        let selectedDestinationLocation = null; // { lat, lon, address } - NEW for selected destination
+        let userLocation = null;
+        let selectedDestinationLocation = null;
         let currentBookingId = null;
         let currentRiderId = null;
         let riderPusherChannel = null;
@@ -385,14 +403,15 @@
         destinationAddressInput.addEventListener('input', (e) => {
             clearTimeout(debounceTimeout);
             const query = e.target.value.trim();
-            if (query.length < 3) { // Only search if query is at least 3 characters
+            if (query.length < 3) {
                 destinationSuggestionsEl.innerHTML = '';
-                selectedDestinationLocation = null; // Clear selected location if input changes
+                destinationSuggestionsEl.style.display = 'none'; // Hide list
+                selectedDestinationLocation = null;
                 return;
             }
             debounceTimeout = setTimeout(() => {
                 fetchSuggestions(query);
-            }, 300); // Debounce by 300ms
+            }, 300);
         });
 
         async function fetchSuggestions(query) {
@@ -406,11 +425,14 @@
             } catch (error) {
                 console.error("Error fetching suggestions:", error);
                 destinationSuggestionsEl.innerHTML = `<li>Error fetching suggestions.</li>`;
+                destinationSuggestionsEl.style.display = 'block'; // Show error
             }
         }
 
         function displaySuggestions(suggestions) {
-            destinationSuggestionsEl.innerHTML = ''; // Clear previous suggestions
+            destinationSuggestionsEl.innerHTML = '';
+            destinationSuggestionsEl.style.display = 'block'; // Ensure list is visible
+
             if (suggestions.length === 0) {
                 destinationSuggestionsEl.innerHTML = `<li>No results found.</li>`;
                 return;
@@ -429,7 +451,8 @@
                         lon: parseFloat(item.lon),
                         address: item.display_name
                     };
-                    destinationSuggestionsEl.innerHTML = ''; // Hide suggestions after selection
+                    destinationSuggestionsEl.innerHTML = '';
+                    destinationSuggestionsEl.style.display = 'none'; // Hide after selection
                 });
                 destinationSuggestionsEl.appendChild(li);
             });
@@ -439,6 +462,7 @@
         document.addEventListener('click', (e) => {
             if (!destinationAddressInput.contains(e.target) && !destinationSuggestionsEl.contains(e.target)) {
                 destinationSuggestionsEl.innerHTML = '';
+                destinationSuggestionsEl.style.display = 'none';
             }
         });
 
@@ -448,7 +472,7 @@
             const pickupAddress = pickupAddressInput.value.trim();
             const destinationAddress = destinationAddressInput.value.trim();
 
-            if (!pickupAddress || pickupAddress === "Current Location") { // Allow "Current Location" placeholder
+            if (!pickupAddress || pickupAddress === "Current Location") {
                 displayStatusMessage("Please confirm your pickup address.", "error");
                 return;
             }
@@ -456,7 +480,6 @@
                 displayStatusMessage("Please enter a destination address.", "error");
                 return;
             }
-            // IMPORTANT: Now we validate if a suggestion was selected for destination
             if (!selectedDestinationLocation || selectedDestinationLocation.address !== destinationAddress) {
                 displayStatusMessage("Please select a valid destination from the suggestions.", "error");
                 return;
@@ -474,18 +497,18 @@
             const rideRequestData = {
                 bookingId: currentBookingId,
                 pickup: {
-                    address: pickupAddress, // This will be "Current Location" for now
+                    address: pickupAddress,
                     lat: userLocation.lat,
                     lon: userLocation.lon
                 },
-                destination: { // Use the data from the selected suggestion
+                destination: {
                     address: selectedDestinationLocation.address,
                     lat: selectedDestinationLocation.lat,
                     lon: selectedDestinationLocation.lon
                 },
                 riderId: currentRiderId,
-                distance: (Math.random() * 5 + 1).toFixed(1), // Dummy distance
-                fare: (Math.random() * 50 + 30).toFixed(2) // Dummy fare
+                distance: (Math.random() * 5 + 1).toFixed(1),
+                fare: (Math.random() * 50 + 30).toFixed(2)
             };
 
             console.log("Frontend: Sending ride request with bookingId:", rideRequestData.bookingId);
@@ -573,7 +596,7 @@
                     }
                     pickupAddressInput.value = "Current Location";
                     destinationAddressInput.value = "";
-                    selectedDestinationLocation = null; // Clear selected destination
+                    selectedDestinationLocation = null;
                 }, 5000);
             });
 
